@@ -16,7 +16,7 @@ More details are in the [AIAI 2022 conference paper](https://link.springer.com/c
 
 [2] Amunategui, M.: Data Exploration & Machine Learning, Hands-on. https://amunategui.github.io/survival-ensembles/index.html
 
-[3] Marmerola, G.D.: Calibration of probabilities for tree-based models | Guilherme’s Blog. https://gdmarmerola.github.io/probability-calibration/
+[3] Marmerola, G.D.: Calibration of probabilities for tree-based models Guilherme’s Blog. https://gdmarmerola.github.io/probability-calibration/
 
 [4] Su, X., Tsai, C.-L.: Tree-augmented Cox proportional hazards models. Biostatistics 6, 486–499 (2005)
 
