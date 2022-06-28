@@ -32,6 +32,6 @@ More details are in the [AIAI 2022 conference paper](https://link.springer.com/c
 
 [10] Ishwaran, H.: Variable importance in binary regression trees and forests. Electron. J. Stat. 1, 519–537 (2007)
 
-# Support or Contact
+#### Support or Contact
 diana.shamsutdinova@kcl.ac.uk
 
