@@ -1,37 +1,37 @@
-## Welcome to GitHub Pages
+## Ensemble methods for survival analysis project
 
-You can use the [editor on GitHub](https://github.com/dianashams/ensemble-methods-for-survival-analysis/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+Survival analysis is a brunch of methods that analyse time-to-event data. That is, it estimates the time it takes for an event to happen in a given population, and how  it dependis on various parameters. The applications could be estimating what proportion of the population will fail by certain point, or how the rate of event changes with time. Population maybe a population of bacteria, people, or group of financial companies, or a company client base; an event can be death, or disease onset or recovery from a disease, bankruptcy, or moving to a competitor. 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+This project contains several functions written in R language that mix classical Cox regression for survival data and decision tree-based machine learning algorithms (survival decision tree and survival random forest). We mixed classical regression and ML methods while thinking about the health outcomes (e.g. a disease onset), and to develop a -friendly way of incorportating machine learning for health researchers. In this, we aimed to preserve algorithm interpretability and get an insight into the data structure, as much as we targeted a better predictive performance compared to a baseline and widely used Cox Proportionate Hazards model.
 
-### Markdown
+The link to the code is [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+#### Methods  
+The methods' description  and initial results were presented at the [talk](https://youtu.be/1Z8C0pAi_Cs) at the [NIHR Maudsley Biomedical Research Center Prediction Modelling Group](https://www.maudsleybrc.nihr.ac.uk/facilities/prediction-modelling-presentations/) meeting (September, 2021). 
 
-```markdown
-Syntax highlighted code block
+More details are in the [AIAI 2022 conference paper](https://link.springer.com/chapter/10.1007/978-3-031-08337-2_15)[1].
 
-# Header 1
-## Header 2
-### Header 3
+#### Links and references
+[1] Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox Model and Tree-Based Algorithms to Boost Performance and Preserve Interpretability for Health Outcomes. In IFIP International Conference on Artificial Intelligence Applications and Innovations (pp. 170-181). Springer, Cham.
 
-- Bulleted
-- List
+[2] Amunategui, M.: Data Exploration & Machine Learning, Hands-on. https://amunategui.github.io/survival-ensembles/index.html
 
-1. Numbered
-2. List
+[3] Marmerola, G.D.: Calibration of probabilities for tree-based models | Guilherme’s Blog. https://gdmarmerola.github.io/probability-calibration/
 
-**Bold** and _Italic_ and `Code` text
+[4] Su, X., Tsai, C.-L.: Tree-augmented Cox proportional hazards models. Biostatistics 6, 486–499 (2005)
 
-[Link](url) and ![Image](src)
-```
+[5] Breiman, L., Friedman, J.H., Olshen, R.A., Stone, C.J.: Classification and Regression Trees. Wadsworth & Brooks/Cole Advanced Books & Software, Monterey, CA (1984)
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+[6] Shimokawa, A., Kawasaki, Y., Miyaoka, E.: Comparison of splitting methods on survival tree. Int. J. Biostat. 11, 175–188 (2015)
 
-### Jekyll Themes
+[7] Ishwaran, H., Lauer, M.S., Blackstone, E.H., Lu, M.: randomForestSRC: Random Survival Forests Vignette (2021)
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/dianashams/ensemble-methods-for-survival-analysis/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+[8] Royston, P., Altman, D.G.: Regression using fractional polynomials of continuous covariates: parsimonious parametric modelling. Appl. Stat. 43, 429 (1994)
 
-### Support or Contact
+[9] Therneau, T., Atkinson, E.: An introduction to recursive partitioning using the RPART routines (2019)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+[10] Ishwaran, H.: Variable importance in binary regression trees and forests. Electron. J. Stat. 1, 519–537 (2007)
+
+# Support or Contact
+diana.shamsutdinova@kcl.ac.uk
+
