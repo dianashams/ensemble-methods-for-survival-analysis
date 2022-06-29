@@ -1,4 +1,4 @@
-## Ensemble methods for survival analysis project
+## Ensemble methods for survival analysis
 
 Survival analysis is a brunch of methods that analyse time-to-event data. That is, it estimates the time it takes for an event to happen in a given population, and how  it dependis on various parameters. The applications could be estimating what proportion of the population will fail by certain point, or how the rate of event changes with time. Population maybe bacteria in a dish, group of people, financial companies, or app users; an event can be death, disease onset, cancer recovery, firm's bankruptcy, or a user unsubscribing from an app. 
 
