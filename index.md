@@ -12,7 +12,7 @@ We primarily had health outcomes in mind (e.g. a disease onset) and tried to dev
 
 * preserve  algorithm's interpretability.
 
-The link to the code is [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
+All the code is in R, and can be found [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
 
 #### Methods  
 The methods' description  and initial results were presented at the [talk](https://youtu.be/1Z8C0pAi_Cs) at the [NIHR Maudsley Biomedical Research Center Prediction Modelling Group](https://www.maudsleybrc.nihr.ac.uk/facilities/prediction-modelling-presentations/) meeting (September, 2021). 
