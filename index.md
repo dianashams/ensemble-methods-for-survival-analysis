@@ -1,8 +1,18 @@
 ## Ensemble methods for survival analysis
 
-Survival analysis is a collection of methods that analyse time-to-event data. The aims include estimating distribution of event times in a given population, and how it depends on individual risk factors. The applications could be estimating a proportion of the initial population for which the event will happen by a certain point, or how the rate of event changes with time. "Population" can be bacteria in a dish, group of people, group of financial companies, or app users; an event can be death, disease onset, cancer recovery, firm's bankruptcy, or unsubscribing from an app. 
+Survival analysis is a collection of methods that analyse time-to-event data. The methods are used to estimate distribution of event times in a given population, and model its dependence on individual risk factors. The applications could be estimating a proportion of the initial population for which the event will happen by a certain point, or how the rate of event changes with time. It can also be employed to understand an impact of a risk factor, or make individual predictions on time-to-event. "Population" can be bacteria in a dish, group of people, group of financial companies, or app users; an event can be death, disease onset, cancer recovery, firm's bankruptcy, or unsubscribing from an app. 
 
-This project contains several functions written in R language that mix classical Cox regression for survival data and decision tree-based machine learning algorithms (survival decision tree and survival random forest). We primarily had health outcomes in mind (e.g. a disease onset) and targeted to develop user-friendly functions incorportating machine learning into the Cox proportionate hazards model, widely used method in health research for time-to-event data. In particular, the ensembled methods fitted in the functions aim to boost predictive performance, give insight into the data structure, separate linear and non-linear relationships, and preserve resulting algorithm's interpretability.
+We primarily had health outcomes in mind (e.g. a disease onset) and tried to developed user-friendly functions that enhance classical Cox proportionate hazards model  with machine learning algorithms such as survival decision tree and survival random forest. 
+
+The models aim to 
+
+* boost predictive performance while estimating time-to-event by a given time point, 
+
+* separate linear and non-linear relationships, 
+
+* give insight into the data structure, 
+
+* preserve  algorithm's interpretability.
 
 The link to the code is [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
 
