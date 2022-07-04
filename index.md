@@ -2,7 +2,7 @@
 
 Survival analysis is a collection of methods that analyse time-to-event data. The methods are used to estimate distribution of event times in a given population, and model its dependence on individual risk factors. The applications could be estimating a proportion of the initial population for which the event will happen by a certain point, or how the rate of event changes with time. It can also be employed to understand an impact of a risk factor, or make individual predictions on time-to-event. "Population" can be bacteria in a dish, group of people, group of financial companies, or app users; an event can be death, disease onset, cancer recovery, firm's bankruptcy, or unsubscribing from an app. 
 
-We primarily had health outcomes in mind (e.g. a disease onset) and tried to developed user-friendly functions that enhance classical Cox proportionate hazards model  which is widely used in health research, with machine learning algorithms such as survival decision tree and survival random forest. While mixing the classical and machine learning algorithms, we aimed to 
+We primarily had health outcomes in mind (e.g. a disease onset) and tried to developed user-friendly functions that enhance classical Cox proportionate hazards model,  which is widely used in health research, with machine learning algorithms such as survival decision trees and survival random forest. While mixing classical and machine learning algorithms, we aimed to 
 
 * boost predictive performance while estimating time-to-event by a given time point, 
 
