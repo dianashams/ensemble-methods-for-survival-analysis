@@ -5,6 +5,6 @@ The algorithms can provide better predictive performance compared to the baselin
 
 Some more details are on the project page https://dianashams.github.io/ensemble-methods-for-survival-analysis/
 
-If you use parts of this project's code, please cite our work:
+If you use this project's code, please cite:
 
 Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox Model and Tree-Based Algorithms to Boost Performance and Preserve Interpretability for Health Outcomes. In IFIP International Conference on Artificial Intelligence Applications and Innovations (pp. 170-181). Springer, Cham.
