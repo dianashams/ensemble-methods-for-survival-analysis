@@ -141,6 +141,28 @@ method_any_validate = function(y_predict, times_to_predict, df_train , df_test, 
   return (output)
 }
 
+populationstats = function(df_stats, time_f,  namedf = "df"){
+  #df_stats = results_object[[3]]
+  statsdf = data.frame()
+  df_stats$event_fixed_time = ifelse(((df_stats$event ==1)&(df_stats$time < time_f)), 1, 0)
+  df_stats$time_fixed_time = ifelse(df_stats$time < time_f, df_stats$time, time_f )
+  statsdf["data_set_name","value"] = namedf
+  statsdf["sample_size_N","value"] = nrow(df_stats)
+  statsdf["time_fixed","value"] =   time_f  # results_object[[8]][1]
+  statsdf["time_max","value"] = round(max(df_stats$time),2)
+  statsdf["time_mean","value"] = round(mean(df_stats$time),2)
+  statsdf["time_mean_event","value"] = round(sum(df_stats[df_stats$event ==1, "time"])/sum(df_stats$event ==1),2)
+  statsdf["time_mean_censored","value"] = round(sum(df_stats[df_stats$event ==0, "time"])/sum(df_stats$event ==0),2)
+  statsdf["time_mean_T","value"] = round(mean(df_stats$time_fixed_time),2)
+  statsdf["time_mean_event_T","value"] = round(sum(df_stats[df_stats$event_fixed_time ==1, "time"])/sum(df_stats$event_fixed_time ==1),2)
+  statsdf["time_mean_censored_T","value"] = round(sum(df_stats[df_stats$event_fixed_time ==0, "time"])/sum(df_stats$event_fixed_time ==0),2)
+  statsdf["event_%","value"] = round(sum(df_stats$event==1) / nrow(df_stats) *100,2)
+  statsdf["event_before_T_%","value"] = round(sum(df_stats$event_fixed_time==1) / nrow(df_stats)*100,2)
+  statsdf["censored_before_T_%","value"] = 
+    round(sum(df_stats$event_fixed_time==0 & df_stats$time_fixed_time < statsdf["time_fixed","value"]) / nrow(df_stats)*100,2)
+  return (statsdf)
+}
+
 ############# Basic Cox Model functions (in the same format as other methods) ###############
 
 method_cox_train = function(df_train, predict.factors){
