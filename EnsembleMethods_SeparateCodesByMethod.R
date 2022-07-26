@@ -141,6 +141,7 @@ method_any_validate = function(y_predict, times_to_predict, df_train , df_test, 
   return (output)
 }
 
+
 populationstats = function(df_stats, time_f,  namedf = "df"){
   #df_stats = results_object[[3]]
   statsdf = data.frame()
@@ -163,6 +164,7 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
   return (statsdf)
 }
 
+
 ############# Basic Cox Model functions (in the same format as other methods) ###############
 
 method_cox_train = function(df_train, predict.factors){
@@ -182,7 +184,7 @@ method_cox_predict = function(model_cox, df_test, fixed_time){
   return (predicted_event_prob)
 }
 
-method_cox_cv = function(df, predict.factors, fixed_time =10, cv_number = 5){
+method_cox_cv = function(df, predict.factors, fixed_time =10, cv_number = 5, seed_to_fix = 100){
   time_0 = Sys.time()
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) #use caret to split into k-folds = cv_steps
@@ -298,8 +300,11 @@ srf_survival_prob_for_time = function(rfmodel, df_to_predict, fixed_time, oob = 
   return(y_predicted)
 }
 
-srf_tune = function(df_tune ,  cv_number =3, predict.factors, fixed_time = NaN, seed_to_fix = 100,
-                    mtry= c(3,4,5), nodesize = c(10,20,50), nodedepth = c(100), verbose = FALSE, oob = TRUE){
+srf_tune = function(df_tune ,  cv_number =3, 
+                    predict.factors, fixed_time = NaN, 
+                    seed_to_fix = 100,
+                    mtry= c(3,4,5), nodesize = c(10,20,50), nodedepth = c(100),
+                    verbose = FALSE, oob = TRUE){
   #function to tune survival random forest by mtry, nodesize and nodedepth grid 
   # if oob = TRUE, there is no CV !!! as OOB does the job already 
   #set seed
@@ -339,6 +344,7 @@ srf_tune = function(df_tune ,  cv_number =3, predict.factors, fixed_time = NaN, 
       #train grid combination for each cv_iteration
       modelstats_cv = list()
       for (cv_iteration in 1:cv_number) {
+        print (paste("SRF tuning CV step", cv_iteration, "/out of", cv_number))
         df_train_cv = df_tune[cv_folds != cv_iteration, ]
         df_test_cv = df_tune[cv_folds == cv_iteration, ]
         #train SRF
@@ -382,6 +388,8 @@ srf_tune = function(df_tune ,  cv_number =3, predict.factors, fixed_time = NaN, 
     }#end for grid
     
   } else { # end if(oob==false) 
+    print ("No internal CV for training SRF, 
+           instead out-of-bag predictions used to assess performance")
     for (i in 1:dim(grid_of_values)[1]){
       print(grid_of_values[i,])  
       mtry_i = grid_of_values[i,"mtry"]
@@ -440,7 +448,8 @@ srf_tune = function(df_tune ,  cv_number =3, predict.factors, fixed_time = NaN, 
 }
 
 
-method_srf_train = function(df_train, predict.factors, fixed_time=10, cv_number = 3, seed_to_fix = 100, fast_version = TRUE, oob = TRUE){
+method_srf_train = function(df_train, predict.factors, fixed_time=10, cv_number = 3, 
+                            seed_to_fix = 100, fast_version = TRUE, oob = TRUE){
   #for now only for best AUC but can be amended for brier score or cindex
   #defining the tuning grid for SRF 
   p = length(predict.factors) #number of predictors
@@ -455,7 +464,7 @@ method_srf_train = function(df_train, predict.factors, fixed_time=10, cv_number 
   nodesize = seq(min(15, round(n/6-1,0)), max(min(n/10,50),30), 5)
   #nodedepth grid
   nodedepth = c(50) #we don't tune this so just a big number 
-  print (c("mtry", mtry, "nodedepth", nodedepth, "nodesize", nodesize))
+  print (paste("mtry", mtry, "nodedepth", nodedepth, "nodesize", nodesize))
   
   if (fast_version == TRUE) {
     #take recommended mtry and check the best depth and node size 
@@ -513,24 +522,40 @@ method_srf_predict = function(model_srf, df_test, fixed_time =8, seed_to_fix = 1
   }
 }
 
-method_srf_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, seed_to_fix = 100){
+method_srf_cv = function(df, predict.factors, fixed_time = 10, 
+                         cv_number = 3, 
+                         internal_cv_k = 3, 
+                         seed_to_fix = 100){
+  
   time_0 = Sys.time()
   set.seed(seed_to_fix)
-  cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) #use caret to split into k-folds = cv_steps
+  #use caret to split into k-folds = cv_steps
+  cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) 
   modelstats_train = list(); modelstats_test = list()
   srf_models_for_each_cv = list() #saving trained best SRF to re-use in ensemble 1A
+  
+  print (paste("Cross-validating Survival Random Forest with", cv_number,
+               "outer loops, and ",internal_cv_k,"inner loops for model tuning"))
+  
   for (cv_iteration in 1:cv_number){
+    print (paste('External loop CV, step number = ', cv_iteration, '/ out of', cv_number))
+    
     df_train_cv = df[cv_folds != cv_iteration, ]
     df_test_cv  = df[cv_folds == cv_iteration, ]
     
     srf.model.tuned = method_srf_train(df_train_cv, predict.factors,fixed_time = fixed_time,
-                                       cv_number =3, seed_to_fix=seed_to_fix, fast_version = TRUE, oob = TRUE)
+                                       cv_number =internal_cv_k, seed_to_fix=seed_to_fix,
+                                       fast_version = TRUE, oob = TRUE)
     
-    y_predict_test =  method_srf_predict(srf.model.tuned$model, df_test_cv, fixed_time, seed_to_fix = seed_to_fix, oob = FALSE)
-    y_predict_train = method_srf_predict(srf.model.tuned$model, df_train_cv, fixed_time, seed_to_fix = seed_to_fix, oob= FALSE)
+    y_predict_test =  method_srf_predict(srf.model.tuned$model, df_test_cv,
+                                         fixed_time, seed_to_fix = seed_to_fix, oob = FALSE)
+    y_predict_train = method_srf_predict(srf.model.tuned$model, df_train_cv, 
+                                         fixed_time, seed_to_fix = seed_to_fix, oob= FALSE)
     
-    modelstats_test[[cv_iteration]] = method_any_validate(y_predict_test, fixed_time, df_train_cv, df_test_cv, weighted = 1)
-    modelstats_train[[cv_iteration]] = method_any_validate(y_predict_train, fixed_time, df_train_cv, df_train_cv, weighted = 1)
+    modelstats_test[[cv_iteration]] = method_any_validate(y_predict_test, 
+                                                          fixed_time, df_train_cv, df_test_cv, weighted = 1)
+    modelstats_train[[cv_iteration]] = method_any_validate(y_predict_train, 
+                                                           fixed_time, df_train_cv, df_train_cv, weighted = 1)
     
     srf_models_for_each_cv[[cv_iteration]]= srf.model.tuned$model
   }
@@ -551,7 +576,8 @@ method_srf_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, se
   return(output)
 }
 
-########## Ensemble 1A ###########
+######################### Ensemble 1A ########################
+# Method uses Cox model predictions to pass to Survival Random Forest 
 
 method_1A_train = function(df_train, predict.factors, fixed_time=10, cv_number = 3, 
                            seed_to_fix = 100, fast_version = TRUE, oob = TRUE){
@@ -564,6 +590,7 @@ method_1A_train = function(df_train, predict.factors, fixed_time=10, cv_number =
   cv_folds = caret::createFolds(df_train$event, k=10, list = FALSE) 
   cindex_train = vector(length = 10); cindex_test = vector(length = 10)
   for (cv_iteration in 1:10){
+    
     cox_train = df_train[cv_folds != cv_iteration, ]
     cox_oob  =  df_train[cv_folds == cv_iteration, ]
     #train cox model on cox_train
@@ -597,16 +624,21 @@ method_1A_predict = function(model_1a, df_test, fixed_time, seed_to_fix = 100, o
 }
 
 
-method_1A_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, seed_to_fix = 100){
+method_1A_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3,
+                        internal_cv_k = 3, seed_to_fix = 100){
   time_0 = Sys.time()
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) #use caret to split into k-folds = cv_steps
   modelstats_train = list(); modelstats_test = list()
   models_for_each_cv=list()
   for (cv_iteration in 1:cv_number){
+    print (paste('External loop CV, step number = ', cv_iteration, '/ out of', cv_number))
+    
     df_train_cv = df[cv_folds != cv_iteration, ]
     df_test_cv  = df[cv_folds == cv_iteration, ]
-    model.tuned = method_1A_train(df_train_cv, predict.factors,fixed_time = fixed_time, cv_number =3, seed_to_fix=seed_to_fix, fast_version = TRUE, oob = TRUE)
+    model.tuned = method_1A_train(df_train_cv, predict.factors,fixed_time = fixed_time,
+                                  cv_number = internal_cv_k, seed_to_fix=seed_to_fix, 
+                                  fast_version = TRUE, oob = TRUE)
     #  calculating prediction of the final 1A model 
     y_predict_test =  method_1A_predict(model.tuned, df_test_cv, fixed_time, seed_to_fix = seed_to_fix, oob = FALSE)
     y_predict_train = method_1A_predict(model.tuned, df_train_cv, fixed_time, seed_to_fix = seed_to_fix, oob= FALSE)
@@ -634,11 +666,13 @@ method_1A_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, see
   return(output)
 }
 
-########## Ensemble 1B ###########
+################## Ensemble 1B #########################
+# trains SRF, then passes OOB predictions to Cox 
 
 method_1B_train = function(df_train, predict.factors, fixed_time=10, cv_number = 3, 
                            seed_to_fix = 100, fast_version = TRUE, oob = TRUE, pretrained_srf_model = NULL){
-  # already receives a tuned SRF, we take OOB predictions 
+  # if SRF has been trained as a baseline model, the function can receive a tuned SRF, 
+  # from which we take OOB predictions straight away
   if (is.null(pretrained_srf_model)){
     pretrained_srf_model_output = method_srf_train(df_train, predict.factors, fixed_time, cv_number, seed_to_fix, fast_version=1, oob=TRUE)
     pretrained_srf_model= pretrained_srf_model_output$model
@@ -704,7 +738,8 @@ method_1B_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, see
 # Shallow tree -> Cox model in each cluster
 
 method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
-                          fixed_time=10, n_cv = 3, maxdepth = 10, minbucket = 0, cp =0.001, seed_to_fix = 100){
+                          fixed_time=10, n_cv = 3, 
+                          maxdepth = 10, minbucket = 0, cp =0.001, seed_to_fix = 100){
   
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df_tune$event, k=n_cv, list = FALSE) #use caret to split into k-folds = cv_steps
@@ -712,6 +747,7 @@ method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
   if (minbucket==0) {minbucket = max(50,dim(df_train_cox_rpart)[1]/10)}
   
   for (cv_iteration in 1:n_cv){
+    #print (paste('CV tuning step number = ', cv_iteration, '/out of ', n_cv))
     df_train_cv = df_tune[cv_folds != cv_iteration, ]
     df_test_cv  = df_tune[cv_folds == cv_iteration, ]
     
@@ -751,7 +787,8 @@ method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
 }
 
 
-method_2A_train = function(df_train, predict.factors, fixed_time=10,  seed_to_fix = 100){
+method_2A_train = function(df_train, predict.factors, fixed_time=10, 
+                           internal_cv_k =3, seed_to_fix = 100){
   p = length(predict.factors)
   n = dim(df_train)[1]
   
@@ -778,7 +815,8 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,  seed_to_fi
   if(n>=125){ minbucket_list = seq(50, min(round(n/4,0),150),by = 50)
   }else{minbucket_list = c(25,50)}
   
-  grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, "minbucket" = minbucket_list)
+  grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, 
+                               "minbucket" = minbucket_list)
   print(paste("Grid size for single tree tuning is", dim(grid_of_values)[1]))
   
   bestcindex = vector(mode = "double", length = dim(grid_of_values)[1]); i=1
@@ -787,10 +825,10 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,  seed_to_fi
     maxdepth = grid_of_values[i, "tree_depth"]
     minbucket = grid_of_values[i, "minbucket"]
     bestcindex[i] = method_2A_tune(df_train, params, predict.factors, fixed_time=fixed_time,
-                                   n_cv = 3, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = seed_to_fix)[2]
+                                   n_cv = internal_cv_k, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = seed_to_fix)[2]
     i=i+1
   }
-  print(grid_of_values[which.max(bestcindex),])
+  #print(grid_of_values[which.max(bestcindex),])
   maxdepth_use = grid_of_values[which.max(bestcindex),"tree_depth"]
   p_use = var_sorted[1:grid_of_values[which.max(bestcindex),"p_cv"]]
   minbucket_use = grid_of_values[which.max(bestcindex),"minbucket"]
@@ -857,17 +895,24 @@ method_2A_predict = function(model_2a , df_test, fixed_time){
   return(df_test$eventprob2a)
 }
 
-method_2A_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, seed_to_fix = 100){
+method_2A_cv = function(df, predict.factors, 
+                        fixed_time = 10, 
+                        cv_number = 3, 
+                        internal_cv_k = 3, 
+                        seed_to_fix = 100){
   time_0 = Sys.time()
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) #use caret to split into k-folds = cv_steps
   modelstats_train = list(); modelstats_test = list()
   models_for_each_cv = list() #saving trained cv models 
   for (cv_iteration in 1:cv_number){
+    print (paste('External loop CV, step number = ', cv_iteration, '/ out of', cv_number))
+    
     df_train_cv = df[cv_folds != cv_iteration, ]
     df_test_cv  = df[cv_folds == cv_iteration, ]
     
-    model2a_tuned = method_2A_train(df_train_cv, predict.factors,fixed_time = fixed_time, seed_to_fix=seed_to_fix)
+    model2a_tuned = method_2A_train(df_train_cv, predict.factors,fixed_time = fixed_time, 
+                                    internal_cv_k = internal_cv_k, seed_to_fix=seed_to_fix)
     
     y_predict_test =  method_2A_predict(model2a_tuned, df_test_cv, fixed_time)
     y_predict_train = method_2A_predict(model2a_tuned, df_train_cv, fixed_time)
@@ -906,6 +951,7 @@ method_2B_tune = function(df_tune, params_for_tree , predict.factors, fixed_time
   
   cindex_train = vector(length = n_cv); cindex_test = vector(length = n_cv)
   for (cv_iteration in 1:n_cv){
+    print (paste('CV step number = ', cv_iteration))
     df_train_cv = df_tune[cv_folds != cv_iteration, ]
     df_test_cv  = df_tune[cv_folds == cv_iteration, ]
     
@@ -1068,6 +1114,7 @@ method_2B_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, see
   modelstats_train = list(); modelstats_test = list()
   models_for_each_cv = list() #saving trained best SRF to re-use in ensemble 1A
   for (cv_iteration in 1:cv_number){
+    print (paste('External loop CV, step number = ', cv_iteration))
     df_train_cv = df[cv_folds != cv_iteration, ]
     df_test_cv  = df[cv_folds == cv_iteration, ]
     
@@ -1102,8 +1149,10 @@ method_2B_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, see
 # Modified Cox model with the cluster IDs as factors 
 
 
-method_3_tune = function(df_tune, params_for_tree= c("age", "bmi", "hyp"), predict.factors, fixed_time=fixed_time,
-                         n_cv = 3, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = 100){
+method_3_tune = function(df_tune, params_for_tree= c("age", "bmi", "hyp"), predict.factors,
+                         fixed_time=fixed_time,
+                         n_cv = 3, maxdepth = maxdepth, cp =0.001, 
+                         minbucket = minbucket, seed_to_fix = 100){
   #tuning ensemble 3 - fudging the tree in maxdepth, minbucket and risk factors to use to CV,
   # this is to get an average test c-index for one combination, all combinations are checked in method_3_cv() function
   set.seed(seed_to_fix)
@@ -1111,6 +1160,7 @@ method_3_tune = function(df_tune, params_for_tree= c("age", "bmi", "hyp"), predi
   
   cindex_train = vector(length = n_cv); cindex_test = vector(length = n_cv)
   for (cv_iteration in 1:n_cv){
+    #print (paste('CV step number = ', cv_iteration))
     df_train_cv = df_tune[cv_folds != cv_iteration, ]
     df_test_cv  = df_tune[cv_folds == cv_iteration, ]
     
@@ -1148,6 +1198,7 @@ method_3B_tune = function(df_tune, params_for_tree, predict.factors, fixed_time=
   
   cindex_train = vector(length = n_cv); cindex_test = vector(length = n_cv)
   for (cv_iteration in 1:n_cv){
+    print (paste('CV step number = ', cv_iteration))
     df_train_cv = df_tune[cv_folds != cv_iteration, ]
     df_test_cv  = df_tune[cv_folds == cv_iteration, ]
     
@@ -1187,17 +1238,20 @@ method_3B_tune = function(df_tune, params_for_tree, predict.factors, fixed_time=
   return(c(mean(cindex_train), mean(cindex_test)))
 }
 
-method_3_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix = 100){
+method_3_train = function(df_train, predict.factors, fixed_time=10, 
+                          internal_cv_k = 3, 
+                          seed_to_fix = 100){
+  
   p = length(predict.factors)
   n = dim(df_train)[1]
+  
   #1) choosing the VIMP variables
   vimp_rfs =  rfsrc(as.formula(paste("Surv(time, event) ~", paste(predict.factors, collapse="+"))),
                     data = df_train,
                     nodesize = 15, ntree = 500, mtry = sqrt(p), nodedepth = NULL,  
                     nsplit = 30,  #to save the time as we only need importance 
                     splitrule = "logrank", statistics= FALSE, membership=TRUE,
-                    importance = "permute", block.size = 250 , 
-                    #https://www.rdocumentation.org/packages/randomForestSRC/versions/2.10.0/topics/rfsrc
+                    importance = "permute", block.size = 250 , #https://www.rdocumentation.org/packages/randomForestSRC/versions/2.10.0/topics/rfsrc
                     seed = seed_to_fix)
   #sorting by importance, take first 10 
   var_importance = sort(vimp_rfs$importance, decreasing = TRUE)
@@ -1205,15 +1259,17 @@ method_3_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix 
   var_sorted = names(var_importance) 
   #alternative method could be holdout.vimp.rfsrc(as.formula(paste("Surv(time, event) ~", paste(predict.factors, collapse="+"))), df_train, splitrule = "logrank", importance = "permute", ntree= 1000,  seed = seed_to_fix)
   
+  
   #2) build the shallow tree: cross-validate the method by the number of VIMP factors and depth of the single tree 
   # number of factors for the tree 3,4,...,10; max tree depth from 3 to 7
-  if(p>3) {p_cv = 3:min(5, p)} else{p_cv=p} #CV by 3,4,...,10 factors for a shallow tree
+  if(p>=3) {p_cv = 3:min(5, p)} else{p_cv=3} #CV by 3,4,...,10 factors for a shallow tree
   maxdepthlist = 2:4
   
   if(n>=125){ minbucket_list = seq(50, min(round(n/4,0),150),by = 50)
-  }else{minbucket_list = c(50)}
+  }else{minbucket_list = c(25,50)}
   
-  grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, "minbucket" = minbucket_list)
+  grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, 
+                               "minbucket" = minbucket_list)
   print(paste("Grid size for single tree tuning is", dim(grid_of_values)[1]))
   
   bestcindex = vector(mode = "double", length = dim(grid_of_values)[1]); i=1
@@ -1221,11 +1277,11 @@ method_3_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix 
     params = var_sorted[1:grid_of_values[i, "p_cv"]]
     maxdepth = grid_of_values[i, "tree_depth"]
     minbucket = grid_of_values[i, "minbucket"]
-    bestcindex[i] = method_3_tune(df_train, params, predict.factors, fixed_time=fixed_time,
-                                  n_cv = 3, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = seed_to_fix)[2]
+    bestcindex[i] = method_2A_tune(df_train, params, predict.factors, fixed_time=fixed_time,
+                                   n_cv = internal_cv_k, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = seed_to_fix)[2]
     i=i+1
   }
-  print(grid_of_values[which.max(bestcindex),])
+  #print(grid_of_values[which.max(bestcindex),])
   maxdepth_use = grid_of_values[which.max(bestcindex),"tree_depth"]
   p_use = var_sorted[1:grid_of_values[which.max(bestcindex),"p_cv"]]
   minbucket_use = grid_of_values[which.max(bestcindex),"minbucket"]
@@ -1235,8 +1291,10 @@ method_3_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix 
   set.seed(seed_to_fix)
   rpart.m = rpart::rpart(as.formula(paste("Surv(time, event) ~", paste(p_use, collapse="+"))),
                          data = df_train, minbucket = minbucket_use, maxdepth = maxdepth_use, cp = 0.001)
-  clusters = unique(round(predict(rpart.m, df_train),6)); length(clusters) #number of clusters
-  df_train$cluster_tree = as.factor(round(predict(rpart.m, newdata = df_train),6))
+  
+  clusters = unique(round(predict(rpart.m,df_train),6)); length(clusters) #number of clusters
+  df_train$cluster_tree = as.factor(round(predict(rpart.m,df_train),6))
+  
   
   #calculating Cox regression with clusters as a new factor
   modified_cox_model = coxph(as.formula(paste("Surv(time, event) ~",
@@ -1263,7 +1321,7 @@ method_3_predict = function(model_3, df_test, fixed_time){
   return(predictedprob)
 }
 
-method_3_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, seed_to_fix = 100){
+method_3_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, internal_cv_k =3, seed_to_fix = 100){
   time_0 = Sys.time()
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df$event, k=cv_number, list = FALSE) #use caret to split into k-folds = cv_steps
@@ -1271,9 +1329,11 @@ method_3_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, seed
   modcox_models_for_each_cv = list() 
   cv_iteration=1
   for (cv_iteration in 1:cv_number){
+    print (paste('External loop CV, step number = ', cv_iteration))
     df_train_cv = df[cv_folds != cv_iteration, ]
     df_test_cv  = df[cv_folds == cv_iteration, ]
-    model3_tuned = method_3_train(df_train_cv, predict.factors, fixed_time=fixed_time, seed_to_fix=seed_to_fix)
+    model3_tuned = method_3_train(df_train_cv, predict.factors, fixed_time=fixed_time,
+                                  internal_cv_k=internal_cv_k,seed_to_fix=seed_to_fix)
     
     y_predict_test =  method_3_predict(model3_tuned, df_test_cv,  fixed_time)
     y_predict_train = method_3_predict(model3_tuned, df_train_cv, fixed_time)
