@@ -25,20 +25,17 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
 ###########################################################################
 
 simulatedata_linear = function (N=1000, observe_time =10, 
-                                percentcensored = 0.2, randomseed = 100){
+                                percentcensored = 0.0, randomseed = 100){
   set.seed(randomseed)
   df = data.frame(age = round(runif(N, -1.73, 1.73),1),
                   bmi = round(rnorm(N, 0, 1),1),  
                   hyp = rbinom(N,1,0.20),
                   gender = rbinom(N,1,0.5))
   
-  #df$bmi_ = (df$bmi-26)/3   #df$age_ = (df$age - 50)/15
-  
-  df$bmi_ = df$bmi;   df$age_ = df$age
   #BMI impact is 1 for low and high levels, 0 in-between
   bmi_beta = 1
 
-  df$event_time = 0.01+ round((rexp(N, 0.1*exp(0.4*df$age_ + 1.0*df$bmi_ + 0.7*df$hyp))),2)
+  df$event_time = 0.01+ round((rexp(N, 0.1*exp(0.4*df$age + 1.0*df$bmi + 0.7*df$hyp))),2)
 
   #make sure event-time is not too small, fudge a bit if so
   #df$event_time = ifelse(df$event_time<0.5, round(runif(1,0.2, 0.5),1), df$event_time)  
@@ -63,15 +60,14 @@ simulatedata_nonlinear = function (N=1000, observe_time =10, percentcensored = 0
                   hyp = rbinom(N,1,0.20),
                   gender = rbinom(N,1,0.5))
   
-  df$bmi_ = df$bmi; df$age_ = df$age 
   #BMI impact is 1 for low and high levels, 0 in-between
-  bmi_beta = ifelse( (df$bmi_ < -1)|(df$bmi_>1), 1, 
-                     ifelse( (df$bmi_ < -1.5)|(df$bmi_>1.5), 2, 0))
+  bmi_beta = ifelse( (df$bmi < -1)|(df$bmi>1), 1, 
+                     ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2, 0))
   #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
   age_beta = ifelse( (df$age>=1), 1, 0)
   
   df$event_time = 0.01+ round((rexp(N, 0.08*exp(bmi_beta + 
-                        (df$hyp*0.7)+ df$age_*0.2 + age_beta))),2)
+                        (df$hyp*0.7)+ df$age*0.2 + age_beta))),2)
   #make sure event-time is not too small, fudge a bit if so
   #df$event_time = ifelse(df$event_time<0.5, round(runif(1,0.2, 0.5),1), df$event_time)  
   #add censored / drop-out observations
@@ -91,18 +87,16 @@ simulatedata_nonlinear = function (N=1000, observe_time =10, percentcensored = 0
 
 simulatedata_crossterms = function (N=1000, 
                                     observe_time =10, 
-                                    percentcensored = 0.1, 
+                                    percentcensored = 0.0, 
                                     randomseed=100){
   set.seed(randomseed)
   df = data.frame(age = round(runif(N, -1.73,1.73),1),
                   bmi = round(rnorm(N, 0, 1),1),  
                   hyp = rbinom(N,1,0.2),
                   gender = rbinom(N,1,0.5))
-  df$bmi_ = df$bmi
-  df$age_ = df$age
   #BMI impact is 1 for low and high levels, 0 in-between
-  bmi_beta = ifelse( (df$bmi_ < -1)|(df$bmi_>1), 1, 
-                     ifelse( (df$bmi_ < -1.5)|(df$bmi_>1.5), 2,0))
+  bmi_beta = ifelse( (df$bmi < -1)|(df$bmi>1), 1, 
+                     ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2,0))
   
   # hypertension x age interaction
   hyp_beta = ifelse((df$age_>=1 & df$hyp == 1), 2, 
@@ -130,7 +124,7 @@ simulatedata_crossterms = function (N=1000,
 #################################################################
 
 simulatedata_linear_0 = function (N=1000,  observe_time =10, 
-                                  percentcensored = 0.2, randomseed = 100){
+                                  percentcensored = 0.0, randomseed = 100){
   set.seed(randomseed)
   df = data.frame(age = round(runif(N, 20,75),1),
                   bmi = round(rnorm(N, 26, 3),1),  
