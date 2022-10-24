@@ -56,8 +56,8 @@ simulatedata_nonlinear = function (N=1000, observe_time =10, percentcensored = 0
                   gender = rbinom(N,1,0.5))
   
   #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
-  bmi_beta = ifelse( (df$bmi < -1)|(df$bmi>1), 1, 
-                     ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2, 0))
+  bmi_beta = ifelse((df$bmi < -1.5)|(df$bmi>1.5), 2, 
+                     ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
   #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
   age_beta = ifelse( (df$age>=1), 1, 0)
   #simulating event time
@@ -89,8 +89,8 @@ simulatedata_crossterms = function (N=1000,
                   gender = rbinom(N,1,0.5))
   
   #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
-  bmi_beta = ifelse( (df$bmi < -1)|(df$bmi>1), 1, 
-                     ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2,0))
+  bmi_beta = ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2, 
+                     ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
   
   # hypertension x age interaction
   hyp_beta = ifelse((df$age_>=1 & df$hyp == 1), 2, 
