@@ -41,13 +41,18 @@ ens2a = method_2A_cv(sim_data_nonlinear, predict.factors, fixed_time = 5, cv_num
 ens3 = method_3_cv(sim_data_nonlinear, predict.factors, fixed_time = 5, cv_number = 3, seed_to_fix = 100)
 
 #test results - mean and std across CV steps
-results_on_test_sets =   cbind(  "Cox" = cox$testaverage,   "SRF" = srf$testaverage,   
+results_on_test_sets = cbind(  
+                    "Cox" = cox$testaverage,   
+                     "SRF" = srf$testaverage,   
                      "CoxMFP" = coxmfp$testaverage,
-                     "1A" = ens1a$testaverage,  "2A" = ens2a$testaverage,   
+                     "1A" = ens1a$testaverage,  
+                     "2A" = ens2a$testaverage,   
                       "3" = ens3$testaverage)
 results_on_test_sets
 
-std_on_test_sets =   cbind(  "Cox" = apply(cox$test,  2, sd),   "SRF" = apply(srf$test,  2, sd),  
+std_on_test_sets =   cbind(  
+                     "Cox" = apply(cox$test,  2, sd),
+                     "SRF" = apply(srf$test,  2, sd),  
                      "CoxMFP" = apply(coxmfp$test,  2, sd),
                      "1A" = apply(ens1a$test,  2, sd),  
                      "2A" =apply(ens2a$test,  2, sd),   
@@ -126,7 +131,6 @@ val3ext  =method_any_validate(predict3ext, 5, sim_data_nonlinear, sim_data_nonli
 round(summary(m3$modcoxmodel)$coefficients,4)
   # display the single tree with clusters 
 rpart.plot(m3$treemodel, nn=TRUE, roundint = FALSE, digits = 4)
-
 
 # display  results for all models 
 rbind(valcoxext,valmfpext,valsrfext, val1bext, val2aextf, val3ext)
