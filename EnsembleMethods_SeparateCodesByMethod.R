@@ -169,7 +169,8 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
 
 method_cox_train = function(df_train, predict.factors){
   cox.m  = coxph(as.formula(paste("Surv(df_train$time, df_train$event) ~",
-                                  paste(predict.factors, collapse="+"))), data =df_train, x = TRUE)
+                                  paste(predict.factors, collapse="+"))), 
+                 data =df_train, x = TRUE)
   return (cox.m)
 }
 
@@ -812,7 +813,7 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,
   if(p>=3) {p_cv = 3:min(5, p)} else{p_cv=3} #CV by 3,4,...,10 factors for a shallow tree
   maxdepthlist = 2:4
   
-  if(n>=125){ minbucket_list = seq(50, min(round(n/4,0),150),by = 50)
+  if(n>=200){ minbucket_list = seq(25, min(round(n/4,0),150), by = 50)
   }else{minbucket_list = c(25,50)}
   
   grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, 
@@ -1027,8 +1028,8 @@ method_2B_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix
   if(p>=3) {p_cv = 3:min(10, p)} else{p_cv=3} #CV by 3,4,...,10 factors for a shallow tree
   maxdepthlist = 2:4
   
-  if(n>=125){ nodesize_list = seq(50, min(round(n/4,0),300),by = 50)
-  }else{nodesize_list = c(50)}
+  if(n>=200){ minbucket_list = seq(25, min(round(n/4,0),150), by = 50)
+  }else{minbucket_list = c(25,50)}
   
   grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, "nodesize" = nodesize_list)
   print(paste("Grid size for single tree tuning is", dim(grid_of_values)[1]))
@@ -1265,7 +1266,7 @@ method_3_train = function(df_train, predict.factors, fixed_time=10,
   if(p>=3) {p_cv = 3:min(5, p)} else{p_cv=3} #CV by 3,4,...,10 factors for a shallow tree
   maxdepthlist = 2:4
   
-  if(n>=125){ minbucket_list = seq(50, min(round(n/4,0),150),by = 50)
+  if(n>=200){ minbucket_list = seq(25, min(round(n/4,0),150), by = 50)
   }else{minbucket_list = c(25,50)}
   
   grid_of_values = expand.grid("p_cv" = p_cv, "tree_depth" = maxdepthlist, 
@@ -1341,11 +1342,12 @@ method_3_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, inte
     modelstats_test[[cv_iteration]]  = method_any_validate(y_predict_test, fixed_time, df_train_cv, df_test_cv, weighted = 1)
     modelstats_train[[cv_iteration]] = method_any_validate(y_predict_train, fixed_time, df_train_cv, df_train_cv, weighted = 1)
     
-    modcox_models_for_each_cv[[cv_iteration]]= model3_tuned
+    modcox_models_for_each_cv[[cv_iteration]] = model3_tuned
   }
   df_modelstats_test = data.frame(modelstats_test[[1]])
   df_modelstats_train = data.frame(modelstats_train[[1]])
-  for (i in 2:cv_number){df_modelstats_test[i,]= modelstats_test[[i]]; df_modelstats_train[i,]= modelstats_train[[i]]}
+  for (i in 2:cv_number){df_modelstats_test[i,]= modelstats_test[[i]]; 
+                         df_modelstats_train[i,]= modelstats_train[[i]]}
   df_modelstats_test$test = 1; df_modelstats_train$test = 0
   output = list()
   output$test = df_modelstats_test
