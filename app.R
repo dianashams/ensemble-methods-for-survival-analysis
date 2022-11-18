@@ -11,12 +11,21 @@ library(ggplot2)
 library(GGally)
 
 ### set home directory, source files, set link to the data files
-setwd("~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/GitHub_current")
+### set home directory, source files, set link to the data files
+
+#laptop:
+#setwd("~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/GitHub_current")
+#elsa_file= "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
+#foot_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/5yearfoot_ensemble.csv"
+
+#window pc
+setwd("C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code")
+elsa_file= "C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code/diabetes_data_for_method.csv"
+foot_file = "C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code/5yearfoot_ensemble.csv"
+
 source("Simulating_data.R")
 source("EnsembleMethods_SeparateCodesByMethod.R")
-elsa_file= "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
-foot_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/5yearfoot_ensemble.csv"
-hnscc_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/LassoNet_Exercise/hnscc_merged.csv"
+
 ###
 
 st = ' "baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0", "baseline_exercise",  "B_wealth", 
