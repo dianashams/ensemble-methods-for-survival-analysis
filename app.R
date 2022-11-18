@@ -16,7 +16,29 @@ source("Simulating_data.R")
 source("EnsembleMethods_SeparateCodesByMethod.R")
 elsa_file= "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
 foot_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/5yearfoot_ensemble.csv"
+hnscc_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/LassoNet_Exercise/hnscc_merged.csv"
 ###
+
+st = ' "baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0", "baseline_exercise",  "B_wealth", 
+                             "baseline_B_smokstatus",  "t2dm_", "pc1_", "pc2_", "pc3_" '
+Clean_String <- function(string){
+  temp = string
+  # Remove everything that is not a number or letter (may want to keep more 
+  # stuff in your actual analyses). 
+  temp <- stringr::str_replace_all(temp,",", " ")
+  temp <- stringr::str_replace_all(temp,"'", " ")
+  temp <- stringr::str_replace_all(temp,'["]', '')
+  # Shrink down to just one white space
+  temp <- stringr::str_replace_all(temp,"[\\s]+", " ")
+  # Split it
+  temp <- stringr::str_split(temp, " ")[[1]]
+  # Get rid of trailing "" if necessary
+  indexes <- which(temp == "")
+  if(length(indexes) > 0){
+    temp <- temp[-indexes]
+  } 
+  return(temp)
+}
 
 ######## user interface #########
 # Define UI for application that draws a histogram
@@ -24,43 +46,68 @@ ui <- fluidPage(
   # Application title
   titlePanel("Simulated examples for the survival ensemble methods"),
   
-  ### side panel ############################################
+### side panel ############################################
   sidebarLayout(
     sidebarPanel(
       #sliderInput("N", "Sample size:",
       #            min = 100, max = 20000,value = 150),
-      numericInput(inputId = "N",
-                   label = "Sample size:",
-                   value = 150),
-      hr(),
-      inputPanel("Simulating data",
-                 selectInput(
-                   "data_type",
-                   label = "Select data type",
-                   choices = c("Diabetes_depression",
-                               "Cross-terms", 
-                               "Non-linear", 
-                               "Linear",
-                               "ELSA_Diabetes"),
-                 )
-                ),
-      hr(),
-      numericInput(inputId = "randomseed",
-                   label = "Random seed for simulations:",
-                   value = 42),
-      hr(),
-      numericInput(inputId = "observation_time",
-                   label = "Observation time",
-                   value = 5.0),
-      hr(),
-      numericInput(inputId = "fixed_time",
-                   label = "Predicted time point",
-                   value = 5.0),
-      hr(),
-      numericInput(inputId = "percent_censored",
-                   label = "Simulated drop out rate",
-                   value = 0.2),
+      selectInput(
+        "data_type",
+        label = "Select data type",
+        choices = c("Simulated: Cross-terms", 
+                    "Simulated: Non-linear", 
+                    "Simulated: Linear",
+                    "Diabetes_depression",
+                    "ELSA_Diabetes",
+                    "Hnscc",
+                    "Custom"),
       ),
+      numericInput(inputId = "fixed_time",
+                   label = "Time point for event prediction:",
+                   value = 5.0),
+      inputPanel("",
+                 numericInput(inputId = "randomseed",
+                              label = "Simulated data: random seed:",
+                              value = 42),
+                 
+                 numericInput(inputId = "N",
+                              label = "Sample size:",
+                              value = 150),
+                 
+                 numericInput(inputId = "observation_time",
+                              label = "Observation time",
+                              value = 5.0),
+                 
+                 numericInput(inputId = "percent_censored",
+                              label = "Simulated drop out rate",
+                              value = 0.2),
+      ),
+      
+      inputPanel("",
+                 textInput(
+                   "custom_file",
+                   label = "Custom data: path to data file",
+                   value = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv",
+                   placeholder = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
+                 ),
+ 
+                 textInput(inputId = "custom_predictors",
+                           label = "Predictors to use in the model",
+                           value = ' "baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0", "baseline_exercise",  "B_wealth", 
+                             "baseline_B_smokstatus",  "t2dm_", "pc1_", "pc2_", "pc3_" ',
+                           placeholder = "age, bmi, gender, hyp"),
+                 
+                 textInput(inputId = "custom_time",
+                           label = "Time variable name",
+                           value = "time"),
+                 
+                 textInput(inputId = "custom_event",
+                           label = "Event indicator variable name",
+                           value = "event"),
+      ),
+      
+      ),
+    
     
     ### main panel ############################################
     
@@ -76,7 +123,7 @@ ui <- fluidPage(
                 hr(),
                 plotOutput("distPlot2"),
                 hr(),
-                tags$b("All stats:"),
+                tags$b("Population stats:"),
                 verbatimTextOutput("data_summary"),
        ),
        
@@ -131,47 +178,52 @@ server <- function(input, output) {
   ### load / simulate  data set 
   datasetInput <- reactive({
     switch(input$data_type,
-           "Linear" = simulatedata_linear(input$N, 
+           "Simulated: Linear" = simulatedata_linear(input$N, 
                                           observe_time = input$observation_time,
                                           randomseed = input$randomseed,
                                           percentcensored = input$percent_censored),
-           "Non-linear" = simulatedata_nonlinear(input$N,
+           "Simulated: Non-linear" = simulatedata_nonlinear(input$N,
                                                  observe_time = input$observation_time,
                                                  randomseed = input$randomseed,
                                                  percentcensored = input$percent_censored),
-           "Cross-terms" = simulatedata_crossterms(input$N,
+           "Simulated: Cross-terms" = simulatedata_crossterms(input$N,
                                                    observe_time = input$observation_time,
                                                    randomseed = input$randomseed,
                                                    percentcensored = input$percent_censored),
            "ELSA_Diabetes" = read.csv(elsa_file), 
-           "Diabetes_depression" = read.csv(foot_file)
+           "Diabetes_depression" = read.csv(foot_file),
+           "Custom" = read.csv(input$custom_file),
+           "Hnscc" = read.csv(hnscc_file)
     )
   })
   
   ### define predictors 
   predictfactors <- reactive({
     switch(input$data_type,
-           "Linear" = c("age", "bmi", "hyp", "gender"),
-           "Non-linear" = c("age", "bmi", "hyp", "gender"),
-           "Cross-terms" = c("age", "bmi", "hyp", "gender"),
+           "Simulated: Linear" = c("age", "bmi", "hyp", "gender"),
+           "Simulated: Non-linear" = c("age", "bmi", "hyp", "gender"),
+           "Simulated: Cross-terms" = c("age", "bmi", "hyp", "gender"),
            "ELSA_Diabetes" = c("baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0",
                                "baseline_exercise",  "B_wealth","baseline_B_smokstatus",
                                "t2dm_", "pc1_", "pc2_", "pc3_"),
            "Diabetes_depression"  = c("age", "sex", "texsev", "mean_hbamva",
-                                      "anydep",  "sdscas", "socclas3")
+                                      "anydep",  "sdscas", "socclas3"),
+           "Hnscc" = c("original_firstorder_10Percentile" ,"original_firstorder_90Percentile" ,"original_firstorder_Energy" ,"original_firstorder_Entropy" ,"original_firstorder_InterquartileRange" ,"original_firstorder_Kurtosis" ,"original_firstorder_Maximum" ,"original_firstorder_Mean" ,"original_firstorder_MeanAbsoluteDeviation" ,"original_firstorder_Median" ,"original_firstorder_Minimum" ,"original_firstorder_Range" ,"original_firstorder_RobustMeanAbsoluteDeviation" ,"original_firstorder_RootMeanSquared" ,"original_firstorder_Skewness" ,"original_firstorder_TotalEnergy" ,"original_firstorder_Uniformity" ,"original_firstorder_Variance" ,"original_glcm_Autocorrelation" ,"original_glcm_ClusterProminence" ,"original_glcm_ClusterShade" ,"original_glcm_ClusterTendency" ,"original_glcm_Contrast" ,"original_glcm_Correlation" ,"original_glcm_DifferenceAverage" ,"original_glcm_DifferenceEntropy" ,"original_glcm_DifferenceVariance" ,"original_glcm_Id" ,"original_glcm_Idm" ,"original_glcm_Idmn" ,"original_glcm_Idn" ,"original_glcm_Imc1" ,"original_glcm_Imc2" ,"original_glcm_InverseVariance" ,"original_glcm_JointAverage" ,"original_glcm_JointEnergy" ,"original_glcm_JointEntropy" ,"original_glcm_MCC" ,"original_glcm_MaximumProbability" ,"original_glcm_SumAverage" ,"original_glcm_SumEntropy" ,"original_glcm_SumSquares" ,"original_gldm_DependenceEntropy" ,"original_gldm_DependenceNonUniformity" ,"original_gldm_DependenceNonUniformityNormalized" ,"original_gldm_DependenceVariance" ,"original_gldm_GrayLevelNonUniformity" ,"original_gldm_GrayLevelVariance" ,"original_gldm_HighGrayLevelEmphasis" ,"original_gldm_LargeDependenceEmphasis" ,"original_gldm_LargeDependenceHighGrayLevelEmphasis" ,"original_gldm_LargeDependenceLowGrayLevelEmphasis" ,"original_gldm_LowGrayLevelEmphasis" ,"original_gldm_SmallDependenceEmphasis" ,"original_gldm_SmallDependenceHighGrayLevelEmphasis" ,"original_gldm_SmallDependenceLowGrayLevelEmphasis" ,"original_glrlm_GrayLevelNonUniformity" ,"original_glrlm_GrayLevelNonUniformityNormalized" ,"original_glrlm_GrayLevelVariance" ,"original_glrlm_HighGrayLevelRunEmphasis" ,"original_glrlm_LongRunEmphasis" ,"original_glrlm_LongRunHighGrayLevelEmphasis" ,"original_glrlm_LongRunLowGrayLevelEmphasis" ,"original_glrlm_LowGrayLevelRunEmphasis" ,"original_glrlm_RunEntropy" ,"original_glrlm_RunLengthNonUniformity" ,"original_glrlm_RunLengthNonUniformityNormalized" ,"original_glrlm_RunPercentage" ,"original_glrlm_RunVariance" ,"original_glrlm_ShortRunEmphasis" ,"original_glrlm_ShortRunHighGrayLevelEmphasis" ,"original_glrlm_ShortRunLowGrayLevelEmphasis" ,"original_glszm_GrayLevelNonUniformity" ,"original_glszm_GrayLevelNonUniformityNormalized" ,"original_glszm_GrayLevelVariance" ,"original_glszm_HighGrayLevelZoneEmphasis" ,"original_glszm_LargeAreaEmphasis" ,"original_glszm_LargeAreaHighGrayLevelEmphasis" ,"original_glszm_LargeAreaLowGrayLevelEmphasis" ,"original_glszm_LowGrayLevelZoneEmphasis" ,"original_glszm_SizeZoneNonUniformity" ,"original_glszm_SizeZoneNonUniformityNormalized" ,"original_glszm_SmallAreaEmphasis" ,"original_glszm_SmallAreaHighGrayLevelEmphasis" ,"original_glszm_SmallAreaLowGrayLevelEmphasis" ,"original_glszm_ZoneEntropy" ,"original_glszm_ZonePercentage" ,"original_glszm_ZoneVariance" ,"original_ngtdm_Busyness" ,"original_ngtdm_Coarseness" ,"original_ngtdm_Complexity" ,"original_ngtdm_Contrast" ,"original_ngtdm_Strength" ,"original_shape_Elongation" ,"original_shape_Flatness" ,"original_shape_LeastAxisLength" ,"original_shape_MajorAxisLength" ,"original_shape_Maximum2DDiameterColumn" ,"original_shape_Maximum2DDiameterRow" ,"original_shape_Maximum2DDiameterSlice" ,"original_shape_Maximum3DDiameter" ,"original_shape_MeshVolume" ,"original_shape_MinorAxisLength" ,"original_shape_Sphericity" 
+                       ,"original_shape_SurfaceArea" ,"original_shape_SurfaceVolumeRatio" ,"original_shape_VoxelVolume"),
+           "Custom" = Clean_String(input$custom_predictors),
            )
   })
   
   ### Describe the data ##################
    output$distPlot1 <- renderPlot({
         x <- datasetInput()
-        bins = ifelse(input$N<=500, 
+        nbins = ifelse(input$N<=500, 
                       round(input$N/20,0), 
                       round(100,0))
         times_event = x[x$event==1, "time"]
         bins <- seq(min(times_event), 
                     max(times_event), 
-                    length.out = bins)
+                    length.out = nbins)
         # draw the histogram with the specified number of bins
         hist(times_event, breaks = bins, 
              col = 'darkgray', border = 'white',
@@ -192,7 +244,9 @@ server <- function(input, output) {
    output$distPlot2 <- renderPlot({
      x <- datasetInput()
      predict.factors <- predictfactors()
-     ggpairs(x[,predict.factors])
+     plot_len = ifelse(length(predict.factors)>10, 10, length(predict.factors))
+     predict.factors.plot <- predict.factors[1:plot_len]
+     ggpairs(x[,predict.factors.plot])
    })
      
    output$distPlot0 <- renderPlot({
