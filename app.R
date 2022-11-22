@@ -11,21 +11,12 @@ library(ggplot2)
 library(GGally)
 
 ### set home directory, source files, set link to the data files
-### set home directory, source files, set link to the data files
-
-#laptop:
-#setwd("~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/GitHub_current")
-#elsa_file= "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
-#foot_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/5yearfoot_ensemble.csv"
-
-#window pc
-setwd("C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code")
-elsa_file= "C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code/diabetes_data_for_method.csv"
-foot_file = "C:/Users/dinab/Desktop/PhD Projects/Ensemble methods/Code/5yearfoot_ensemble.csv"
-
+setwd("~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/GitHub_current")
 source("Simulating_data.R")
 source("EnsembleMethods_SeparateCodesByMethod.R")
-
+elsa_file= "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
+foot_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/5yearfoot_ensemble.csv"
+hnscc_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/LassoNet_Exercise/hnscc_merged.csv"
 ###
 
 st = ' "baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0", "baseline_exercise",  "B_wealth", 
@@ -74,9 +65,22 @@ ui <- fluidPage(
       numericInput(inputId = "fixed_time",
                    label = "Time point for event prediction:",
                    value = 5.0),
+      
+      numericInput(inputId = "randomseed_validation",
+                   label = "Random seed for calibration and validation",
+                   value = 42),
+      
+      numericInput(inputId = "k_outer",
+                   label = "K_Outer loop CV (for validation)",
+                   value = 3),
+      
+      numericInput(inputId = "k_inner",
+                   label = "K_ inner CV folds (model tuning)",
+                   value = 3),
+      
       inputPanel("",
                  numericInput(inputId = "randomseed",
-                              label = "Simulated data: random seed:",
+                              label = "Simulated data: random seed (generation)",
                               value = 42),
                  
                  numericInput(inputId = "N",
@@ -99,7 +103,7 @@ ui <- fluidPage(
                    value = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv",
                    placeholder = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/diabetes_data_for_method.csv"
                  ),
- 
+                 
                  textInput(inputId = "custom_predictors",
                            label = "Predictors to use in the model",
                            value = ' "baseline_age_", "genderdum", "bmi_0_", "cvd_0", "hyp_0", "baseline_exercise",  "B_wealth", 
@@ -113,6 +117,7 @@ ui <- fluidPage(
                  textInput(inputId = "custom_event",
                            label = "Event indicator variable name",
                            value = "event"),
+
       ),
       
       ),
@@ -192,13 +197,13 @@ server <- function(input, output) {
                                           randomseed = input$randomseed,
                                           percentcensored = input$percent_censored),
            "Simulated: Non-linear" = simulatedata_nonlinear(input$N,
-                                                 observe_time = input$observation_time,
-                                                 randomseed = input$randomseed,
-                                                 percentcensored = input$percent_censored),
+                                          observe_time = input$observation_time,
+                                          randomseed = input$randomseed,
+                                          percentcensored = input$percent_censored),
            "Simulated: Cross-terms" = simulatedata_crossterms(input$N,
-                                                   observe_time = input$observation_time,
-                                                   randomseed = input$randomseed,
-                                                   percentcensored = input$percent_censored),
+                                          observe_time = input$observation_time,
+                                          randomseed = input$randomseed,
+                                          percentcensored = input$percent_censored),
            "ELSA_Diabetes" = read.csv(elsa_file), 
            "Diabetes_depression" = read.csv(foot_file),
            "Custom" = read.csv(input$custom_file),
@@ -217,7 +222,8 @@ server <- function(input, output) {
                                "t2dm_", "pc1_", "pc2_", "pc3_"),
            "Diabetes_depression"  = c("age", "sex", "texsev", "mean_hbamva",
                                       "anydep",  "sdscas", "socclas3"),
-           "Hnscc" = c("original_firstorder_10Percentile" ,"original_firstorder_90Percentile" ,"original_firstorder_Energy" ,"original_firstorder_Entropy" ,"original_firstorder_InterquartileRange" ,"original_firstorder_Kurtosis" ,"original_firstorder_Maximum" ,"original_firstorder_Mean" ,"original_firstorder_MeanAbsoluteDeviation" ,"original_firstorder_Median" ,"original_firstorder_Minimum" ,"original_firstorder_Range" ,"original_firstorder_RobustMeanAbsoluteDeviation" ,"original_firstorder_RootMeanSquared" ,"original_firstorder_Skewness" ,"original_firstorder_TotalEnergy" ,"original_firstorder_Uniformity" ,"original_firstorder_Variance" ,"original_glcm_Autocorrelation" ,"original_glcm_ClusterProminence" ,"original_glcm_ClusterShade" ,"original_glcm_ClusterTendency" ,"original_glcm_Contrast" ,"original_glcm_Correlation" ,"original_glcm_DifferenceAverage" ,"original_glcm_DifferenceEntropy" ,"original_glcm_DifferenceVariance" ,"original_glcm_Id" ,"original_glcm_Idm" ,"original_glcm_Idmn" ,"original_glcm_Idn" ,"original_glcm_Imc1" ,"original_glcm_Imc2" ,"original_glcm_InverseVariance" ,"original_glcm_JointAverage" ,"original_glcm_JointEnergy" ,"original_glcm_JointEntropy" ,"original_glcm_MCC" ,"original_glcm_MaximumProbability" ,"original_glcm_SumAverage" ,"original_glcm_SumEntropy" ,"original_glcm_SumSquares" ,"original_gldm_DependenceEntropy" ,"original_gldm_DependenceNonUniformity" ,"original_gldm_DependenceNonUniformityNormalized" ,"original_gldm_DependenceVariance" ,"original_gldm_GrayLevelNonUniformity" ,"original_gldm_GrayLevelVariance" ,"original_gldm_HighGrayLevelEmphasis" ,"original_gldm_LargeDependenceEmphasis" ,"original_gldm_LargeDependenceHighGrayLevelEmphasis" ,"original_gldm_LargeDependenceLowGrayLevelEmphasis" ,"original_gldm_LowGrayLevelEmphasis" ,"original_gldm_SmallDependenceEmphasis" ,"original_gldm_SmallDependenceHighGrayLevelEmphasis" ,"original_gldm_SmallDependenceLowGrayLevelEmphasis" ,"original_glrlm_GrayLevelNonUniformity" ,"original_glrlm_GrayLevelNonUniformityNormalized" ,"original_glrlm_GrayLevelVariance" ,"original_glrlm_HighGrayLevelRunEmphasis" ,"original_glrlm_LongRunEmphasis" ,"original_glrlm_LongRunHighGrayLevelEmphasis" ,"original_glrlm_LongRunLowGrayLevelEmphasis" ,"original_glrlm_LowGrayLevelRunEmphasis" ,"original_glrlm_RunEntropy" ,"original_glrlm_RunLengthNonUniformity" ,"original_glrlm_RunLengthNonUniformityNormalized" ,"original_glrlm_RunPercentage" ,"original_glrlm_RunVariance" ,"original_glrlm_ShortRunEmphasis" ,"original_glrlm_ShortRunHighGrayLevelEmphasis" ,"original_glrlm_ShortRunLowGrayLevelEmphasis" ,"original_glszm_GrayLevelNonUniformity" ,"original_glszm_GrayLevelNonUniformityNormalized" ,"original_glszm_GrayLevelVariance" ,"original_glszm_HighGrayLevelZoneEmphasis" ,"original_glszm_LargeAreaEmphasis" ,"original_glszm_LargeAreaHighGrayLevelEmphasis" ,"original_glszm_LargeAreaLowGrayLevelEmphasis" ,"original_glszm_LowGrayLevelZoneEmphasis" ,"original_glszm_SizeZoneNonUniformity" ,"original_glszm_SizeZoneNonUniformityNormalized" ,"original_glszm_SmallAreaEmphasis" ,"original_glszm_SmallAreaHighGrayLevelEmphasis" ,"original_glszm_SmallAreaLowGrayLevelEmphasis" ,"original_glszm_ZoneEntropy" ,"original_glszm_ZonePercentage" ,"original_glszm_ZoneVariance" ,"original_ngtdm_Busyness" ,"original_ngtdm_Coarseness" ,"original_ngtdm_Complexity" ,"original_ngtdm_Contrast" ,"original_ngtdm_Strength" ,"original_shape_Elongation" ,"original_shape_Flatness" ,"original_shape_LeastAxisLength" ,"original_shape_MajorAxisLength" ,"original_shape_Maximum2DDiameterColumn" ,"original_shape_Maximum2DDiameterRow" ,"original_shape_Maximum2DDiameterSlice" ,"original_shape_Maximum3DDiameter" ,"original_shape_MeshVolume" ,"original_shape_MinorAxisLength" ,"original_shape_Sphericity" 
+           "Hnscc" = c("original_firstorder_10Percentile" ,"original_firstorder_90Percentile" ,
+                       "original_firstorder_Energy" ,"original_firstorder_Entropy" ,"original_firstorder_InterquartileRange" ,"original_firstorder_Kurtosis" ,"original_firstorder_Maximum" ,"original_firstorder_Mean" ,"original_firstorder_MeanAbsoluteDeviation" ,"original_firstorder_Median" ,"original_firstorder_Minimum" ,"original_firstorder_Range" ,"original_firstorder_RobustMeanAbsoluteDeviation" ,"original_firstorder_RootMeanSquared" ,"original_firstorder_Skewness" ,"original_firstorder_TotalEnergy" ,"original_firstorder_Uniformity" ,"original_firstorder_Variance" ,"original_glcm_Autocorrelation" ,"original_glcm_ClusterProminence" ,"original_glcm_ClusterShade" ,"original_glcm_ClusterTendency" ,"original_glcm_Contrast" ,"original_glcm_Correlation" ,"original_glcm_DifferenceAverage" ,"original_glcm_DifferenceEntropy" ,"original_glcm_DifferenceVariance" ,"original_glcm_Id" ,"original_glcm_Idm" ,"original_glcm_Idmn" ,"original_glcm_Idn" ,"original_glcm_Imc1" ,"original_glcm_Imc2" ,"original_glcm_InverseVariance" ,"original_glcm_JointAverage" ,"original_glcm_JointEnergy" ,"original_glcm_JointEntropy" ,"original_glcm_MCC" ,"original_glcm_MaximumProbability" ,"original_glcm_SumAverage" ,"original_glcm_SumEntropy" ,"original_glcm_SumSquares" ,"original_gldm_DependenceEntropy" ,"original_gldm_DependenceNonUniformity" ,"original_gldm_DependenceNonUniformityNormalized" ,"original_gldm_DependenceVariance" ,"original_gldm_GrayLevelNonUniformity" ,"original_gldm_GrayLevelVariance" ,"original_gldm_HighGrayLevelEmphasis" ,"original_gldm_LargeDependenceEmphasis" ,"original_gldm_LargeDependenceHighGrayLevelEmphasis" ,"original_gldm_LargeDependenceLowGrayLevelEmphasis" ,"original_gldm_LowGrayLevelEmphasis" ,"original_gldm_SmallDependenceEmphasis" ,"original_gldm_SmallDependenceHighGrayLevelEmphasis" ,"original_gldm_SmallDependenceLowGrayLevelEmphasis" ,"original_glrlm_GrayLevelNonUniformity" ,"original_glrlm_GrayLevelNonUniformityNormalized" ,"original_glrlm_GrayLevelVariance" ,"original_glrlm_HighGrayLevelRunEmphasis" ,"original_glrlm_LongRunEmphasis" ,"original_glrlm_LongRunHighGrayLevelEmphasis" ,"original_glrlm_LongRunLowGrayLevelEmphasis" ,"original_glrlm_LowGrayLevelRunEmphasis" ,"original_glrlm_RunEntropy" ,"original_glrlm_RunLengthNonUniformity" ,"original_glrlm_RunLengthNonUniformityNormalized" ,"original_glrlm_RunPercentage" ,"original_glrlm_RunVariance" ,"original_glrlm_ShortRunEmphasis" ,"original_glrlm_ShortRunHighGrayLevelEmphasis" ,"original_glrlm_ShortRunLowGrayLevelEmphasis" ,"original_glszm_GrayLevelNonUniformity" ,"original_glszm_GrayLevelNonUniformityNormalized" ,"original_glszm_GrayLevelVariance" ,"original_glszm_HighGrayLevelZoneEmphasis" ,"original_glszm_LargeAreaEmphasis" ,"original_glszm_LargeAreaHighGrayLevelEmphasis" ,"original_glszm_LargeAreaLowGrayLevelEmphasis" ,"original_glszm_LowGrayLevelZoneEmphasis" ,"original_glszm_SizeZoneNonUniformity" ,"original_glszm_SizeZoneNonUniformityNormalized" ,"original_glszm_SmallAreaEmphasis" ,"original_glszm_SmallAreaHighGrayLevelEmphasis" ,"original_glszm_SmallAreaLowGrayLevelEmphasis" ,"original_glszm_ZoneEntropy" ,"original_glszm_ZonePercentage" ,"original_glszm_ZoneVariance" ,"original_ngtdm_Busyness" ,"original_ngtdm_Coarseness" ,"original_ngtdm_Complexity" ,"original_ngtdm_Contrast" ,"original_ngtdm_Strength" ,"original_shape_Elongation" ,"original_shape_Flatness" ,"original_shape_LeastAxisLength" ,"original_shape_MajorAxisLength" ,"original_shape_Maximum2DDiameterColumn" ,"original_shape_Maximum2DDiameterRow" ,"original_shape_Maximum2DDiameterSlice" ,"original_shape_Maximum3DDiameter" ,"original_shape_MeshVolume" ,"original_shape_MinorAxisLength" ,"original_shape_Sphericity" 
                        ,"original_shape_SurfaceArea" ,"original_shape_SurfaceVolumeRatio" ,"original_shape_VoxelVolume"),
            "Custom" = Clean_String(input$custom_predictors),
            )
@@ -286,25 +292,30 @@ server <- function(input, output) {
       method_cox_cv(x, 
                     predict.factors, 
                     fixed_time = input$fixed_time, 
-                    cv_number = 3, 
-                    seed_to_fix = input$randomseed)
+                    cv_number = input$k_outer, 
+                    seed_to_fix = input$randomseed_validation)
       })
-    
+   
     Ens2_train_on_all <- reactive({
       x <- datasetInput()
       predict.factors <- predictfactors()
       
-      method_2A_train(x, predict.factors, fixed_time = input$fixed_time, 
-                          internal_cv_k =3, 
-                      seed_to_fix = input$randomseed)
+      method_2A_train(x, predict.factors, 
+                      fixed_time = input$fixed_time, 
+                      internal_cv_k = input$k_inner,
+                      seed_to_fix = input$randomseed_validation)
     })
+    
     
     Ens3_train_on_all <- reactive({
       x <- datasetInput()
       predict.factors <- predictfactors()
       
-      method_3_train(x, predict.factors, fixed_time = input$fixed_time,  
-                          internal_cv_k = 3, seed_to_fix = input$randomseed)
+      method_3_train( x, predict.factors, 
+                      fixed_time = input$fixed_time,
+                      internal_cv_k = input$k_inner, 
+                      seed_to_fix = input$randomseed_validation
+                    )
     })
 
     CoxPH_train_on_all <- reactive({
@@ -334,34 +345,25 @@ server <- function(input, output) {
     })
     
     SRF_cv <- reactive({
-      x <- datasetInput()
-      predict.factors <- predictfactors()
-      
-      #data descriptive tables
-      output$srf_traintest_table <- DT::renderDataTable({
-        x <- datasetInput()
-        rrr <- round(rbind("test" = SRF_cv()$testaverage, 
-                           "train" = SRF_cv()$trainaverage), 4)
-        DT::datatable(rrr[, c(2,5,6,7,1)])
-      })
-      
-    method_srf_cv(x, 
-                    predict.factors, 
-                    fixed_time = input$fixed_time, 
-                    cv_number = 3, 
-                    internal_cv_k = 3,
-                    seed_to_fix = input$randomseed)
+            x <- datasetInput()
+            predict.factors <- predictfactors()
+            
+            method_srf_cv(x, 
+                          predict.factors, 
+                          fixed_time = input$fixed_time, 
+                          cv_number = input$k_outer, 
+                          internal_cv_k = input$k_inner,
+                          seed_to_fix = input$randomseed_validation)
     })
     
     output$srf_table <- renderPrint({
-      x <- datasetInput()
-      SRF_cv()
+        SRF_cv()
     })
     
     output$srf_traintest_table <- DT::renderDataTable({
       x <- datasetInput()
       rrr <- round(rbind("test" = SRF_cv()$testaverage, 
-                  "train" = SRF_cv()$trainaverage), 4)
+                        "train" = SRF_cv()$trainaverage), 4)
       DT::datatable(rrr[, c(2,5,6,7,1)])
     })
     
@@ -378,18 +380,21 @@ server <- function(input, output) {
                                 "train" = Ens1_cv()$trainaverage),4)
       DT::datatable(rrr[, c(2,5,6,7,1)])
     })
+    
     output$ens2_traintest_table <- DT::renderDataTable({
       x <- datasetInput()
       rrr<- round(rbind("test" = Ens2_cv()$testaverage, 
                                 "train" = Ens2_cv()$trainaverage),4)
       DT::datatable(rrr[, c(2,5,6,7,1)])
     })
+    
     output$ens3_traintest_table <- DT::renderDataTable({
       x <- datasetInput()
       rrr<- round(rbind("test" = Ens3_cv()$testaverage, 
                         "train" = Ens3_cv()$trainaverage),4)
       DT::datatable(rrr[, c(2,5,6,7,1)])
     })
+    
     
     Ens1_cv <- reactive({
       x <- datasetInput()
@@ -398,13 +403,12 @@ server <- function(input, output) {
       method_1A_cv(x, 
                     predict.factors, 
                     fixed_time = input$fixed_time, 
-                    cv_number = 3, 
-                    internal_cv_k = 3,
-                    seed_to_fix = input$randomseed)
+                    cv_number = input$k_outer, 
+                    internal_cv_k = input$k_inner,
+                    seed_to_fix = input$randomseed_validation)
     })
     
     output$ens1_table <- renderPrint({
-      x <- datasetInput()
       Ens1_cv()
     })
     
@@ -415,9 +419,9 @@ server <- function(input, output) {
       method_2A_cv(x, 
                    predict.factors, 
                    fixed_time = input$fixed_time, 
-                   cv_number = 3, 
-                   internal_cv_k = 3,
-                   seed_to_fix = input$randomseed)
+                   cv_number = input$k_outer, 
+                   internal_cv_k = input$k_inner,
+                   seed_to_fix = input$randomseed_validation)
     })
     
     output$ens2_table <- renderPrint({
@@ -431,9 +435,9 @@ server <- function(input, output) {
       method_3_cv(x, 
                    predict.factors, 
                    fixed_time = input$fixed_time, 
-                   cv_number = 3, 
-                   internal_cv_k = 3,
-                   seed_to_fix = input$randomseed)
+                   cv_number = input$k_outer, 
+                   internal_cv_k = input$k_inner,
+                   seed_to_fix = input$randomseed_validation)
     })
     
     output$ens3_table <- renderPrint({
@@ -505,6 +509,7 @@ server <- function(input, output) {
         "Ens2_std" =apply(Ens2_cv()$test,  2, sd),   
         "Ens3_std" = apply(Ens3_cv()$test,  2, sd)),6)
     })
+    
     #-> output
     output$performance_table_std <- DT::renderDataTable({
       # outcomes and conclusions on linear/non-linear effects 
@@ -526,3 +531,5 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
