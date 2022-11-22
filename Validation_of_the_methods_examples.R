@@ -12,7 +12,7 @@
 #'#############################################################################
 
 # generate data
-sim_data_nonlinear = simulatedata_nonlinear(5000, 10, 0, 100)
+sim_data_nonlinear = simulatedata_nonlinear(500, 10, 0, 100)
 
 # we will use the predictors in the simulated data, for another sample please change accordingly
 predict.factors = c("age", "bmi", "hyp", "gender")
@@ -98,6 +98,7 @@ valsrfext = method_any_validate(predictsrfext, 5, sim_data_nonlinear, sim_data_n
 
 # Train-predict-validate for Ensemble 1A
 m1a = method_1A_train(sim_data_nonlinear, predict.factors, cv_number = 3, fixed_time = 5, seed_to_fix = 100)
+
 predict1bext = method_1A_predict(m1a, sim_data_nonlinear_exttest, 5)
 predict1b = method_1A_predict(m1a, sim_data_nonlinear, 5)
 val1b =method_any_validate(predict1b, 5, sim_data_nonlinear, sim_data_nonlinear)
@@ -106,9 +107,13 @@ val1bext =method_any_validate(predict1bext, 5, sim_data_nonlinear, sim_data_nonl
 # Train-predict-validate for Ensemble 2A
 m2a = method_2A_train(sim_data_nonlinear, predict.factors, fixed_time = 5, 
                       internal_cv_k =3, seed_to_fix = 100)
-predict2aext = method_2A_predict(m2a, sim_data_nonlinear_exttest, fixed_time=8)
-predict2a = method_2A_predict(m2a, sim_data_nonlinear, fixed_time=8)
-val2a =method_any_validate(predict2a, 5, sim_data_nonlinear, sim_data_nonlinear)
+
+survConcordance(Surv(sim_data_nonlinear$time, sim_data_nonlinear$event)~predict2a)$concordance
+concordancefit(Surv(sim_data_nonlinear$time, sim_data_nonlinear$event), -1*predict2a)$concordance
+
+predict2aext = method_2A_predict(m2a, sim_data_nonlinear_exttest, fixed_time=5)
+predict2a = method_2A_predict(m2a, sim_data_nonlinear, fixed_time=5)
+val2a = method_any_validate(predict2a, 5, sim_data_nonlinear, sim_data_nonlinear)
 val2aextf =method_any_validate(predict2aext, 5, sim_data_nonlinear, sim_data_nonlinear_exttest)
   
   #Additionally: display single tree
@@ -138,4 +143,22 @@ rbind(valcox,valmfp,valsrf, val1b, val2a, val3)
 #library(clipr) Copy results to clip 
 clipr::write_clip(rbind(valcoxext,valmfpext,valsrfext, val1bext, val2aextf, val3ext))
 clipr::write_clip(rbind(valcox,valmfp,valsrf, val1b, val2a, val3))
+
+#########################  hnscc_file  ##################################
+
+hnscc_file = "~/Desktop/Study_KCL/PhD Projects/Ensemblemethods/LassoNet_Exercise/hnscc_merged.csv"
+ddd = read.csv(hnscc_file)
+predict.factors.hnscc = names(ddd)[4:26]
+fixed_time_hns = 4
+m2a = method_2A_train(ddd, predict.factors.hnscc, 
+                      fixed_time = fixed_time_hns, 
+                      internal_cv_k = 4, seed_to_fix = 50)
+
+mcox = method_cox_train(ddd, predict.factors.hnscc)
+mcox$coefficients
+
+predictcox = method_cox_predict(mcox, ddd, fixed_time_hns)
+concordancefit(Surv(df_test_cv$time, df_test_cv$event), -1*df_test_cv$eventprob)$concordance
+valcox = method_any_validate(predictcox, fixed_time_hns, sim_data_nonlinear, sim_data_nonlinear)
+
 
