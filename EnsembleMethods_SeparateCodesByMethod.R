@@ -93,13 +93,14 @@ method_any_validate = function(y_predict, times_to_predict, df_train , df_test, 
     if (length(times_to_predict)>1) { y_hat = y_predict[,i] } else {y_hat = y_predict}
     #time dependent AUC
     auc_score[i] = timeROC::timeROC(T = df_test$time,delta=df_test$event,
-                                    marker= y_hat, times = t_i*0.999,cause=1, weighting = "marginal")$AUC[2]
+                                    marker= y_hat, times = t_i*0.999,cause=1, 
+                                    weighting = "marginal")$AUC[2]
     #time-dependent Brier score:
     brier_score[i]= brier_score_survival_time(y_hat, df_train, df_test, t_i, weighted = weighted)
     #concordance - time-dependent in a sense that a predictor is event probability at t_i:
     # for Cox model it is the same for each time, as event prob will be in the same order as LPs at any time point
-    c_score[i]= survConcordance(Surv(df_test$time, df_test$event)~y_hat)$concordance
-    
+    c_score[i]= concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance
+   
     # can add later confusion matrix, but also need to find Youden point instead of 0.5
     #confmatrix = timeROC::SeSpPPVNPV(0.5, T = df_test$time,delta=df_test$event,
     #                                 marker= y_hat, times = t_i*0.999,cause=1, weighting = "marginal") 
@@ -164,13 +165,20 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
   return (statsdf)
 }
 
+mcox$coefficients[is.na(mcox$coefficients)] = 0
+predict(mcox)
 
 ############# Basic Cox Model functions (in the same format as other methods) ###############
 
 method_cox_train = function(df_train, predict.factors){
+  # wrapper for coxph() function returning a trained Cox model
   cox.m  = coxph(as.formula(paste("Surv(df_train$time, df_train$event) ~",
                                   paste(predict.factors, collapse="+"))), 
                  data =df_train, x = TRUE)
+  #!!!!! We replace NA coefficients with 0 
+  #!!!!! i.e. ignore predictors which the Cox model couldn't estimate)
+  #!!!!! This way the model can still produce some predictions 
+  cox.m$coefficients[is.na(mcox$coefficients)] = 0
   return (cox.m)
 }
 
@@ -308,9 +316,10 @@ srf_tune = function(df_tune ,  cv_number =3,
                     verbose = FALSE, oob = TRUE){
   #function to tune survival random forest by mtry, nodesize and nodedepth grid 
   # if oob = TRUE, there is no CV !!! as OOB does the job already 
+  
   #set seed
   set.seed(seed_to_fix)
-  # limit mtry with the number of predictors and nodesize by 1/4 of sample size
+  # limit mtry with the number of predictors and nodesize by 1/6 of sample size
   if (sum(nodesize > dim(df_tune)[1]/6) > 0) {print ("Warning - some min nodesize is > 1/6 of the sample size (1/2 of CV fold)")}
   nodesize = nodesize[nodesize <= dim(df_tune)[1]/6]
   #if all numbers higher than number of factors, only check this factor
@@ -385,7 +394,6 @@ srf_tune = function(df_tune ,  cv_number =3,
                           "calibration_alpha" =  mean(modelstats_cv_df$calibration_alpha, na.rm=1),
                           "calibration_slope" =  mean(modelstats_cv_df$calibration_slope, na.rm=1),
                           "time"= fixed_time)
-      
     }#end for grid
     
   } else { # end if(oob==false) 
@@ -612,9 +620,16 @@ method_1A_train = function(df_train, predict.factors, fixed_time=10, cv_number =
                                      fixed_time=fixed_time, cv_number = cv_number,
                                      seed_to_fix = seed_to_fix, fast_version = fast_version, 
                                      oob = oob)
+  
+  v = vimp(srf_model_for1a$model, importance = "permute", seed = seed_to_fix)
+  var_importance = sort(v$importance, decreasing = TRUE)
+  
+  srf_model_for1a$vimp10  = var_importance[1:min(length(var_importance),15)]
   srf_model_for1a$model_base  = cox_model_for1a
+  
   return(srf_model_for1a)
 }
+
 
 method_1A_predict = function(model_1a, df_test, fixed_time, seed_to_fix = 100, oob= FALSE){
   #use model_base with the base Cox model to find cox_predict 
@@ -740,7 +755,8 @@ method_1B_cv = function(df, predict.factors, fixed_time = 10, cv_number = 3, see
 
 method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
                           fixed_time=10, n_cv = 3, 
-                          maxdepth = 10, minbucket = 0, cp =0.001, seed_to_fix = 100){
+                          maxdepth = 10, minbucket = 0, 
+                          cp =0.001, seed_to_fix = 100){
   
   set.seed(seed_to_fix)
   cv_folds = caret::createFolds(df_tune$event, k=n_cv, list = FALSE) #use caret to split into k-folds = cv_steps
@@ -767,12 +783,15 @@ method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
       if (sum(df_train_cv$cluster_tree== clusters[i]) < 20){
         cox_i = coxph(as.formula(paste("Surv(time, event) ~ 1")),
                       data = df_train_cv[df_train_cv$cluster_tree== clusters[i],], x= TRUE)
+        cox_i$coefficients[is.na(cox_i$coefficients)] = 0
+        
       }else{
         cox_i = coxph(as.formula(paste("Surv(time, event) ~", paste(c(predict.factors), collapse="+"))),
                       data = df_train_cv[df_train_cv$cluster_tree== clusters[i],], x= TRUE)
         #if all parameter is of the same value in a cluster, its coeff 
         #is NA and it breaks predictSurvProb, so we replace with 0
         cox_i$coefficients[is.na(cox_i$coefficients)] = 0
+        
       }
       #predict event prob in train and test from cox_i
       df_test_cv[df_test_cv$cluster_tree == clusters[i] ,"eventprob"] = 1- 
@@ -781,10 +800,18 @@ method_2A_tune = function(df_tune, predictors.rpart , predict.factors,
         pec::predictSurvProb(cox_i, df_train_cv[df_train_cv$cluster_tree == clusters[i] ,] , fixed_time)
     }
     #check c-index 
-    cindex_test[cv_iteration] = survConcordance(Surv(df_test_cv$time, df_test_cv$event)~df_test_cv$eventprob)$concordance
-    cindex_train[cv_iteration] = survConcordance(Surv(df_train_cv$time, df_train_cv$event)~df_train_cv$eventprob)$concordance
+    #print (describe(df_test_cv$eventprob))
+    c_test = concordancefit(Surv(df_test_cv$time, df_test_cv$event), -1*df_test_cv$eventprob)$concordance
+    c_train = concordancefit(Surv(df_train_cv$time, df_train_cv$event), -1*df_train_cv$eventprob)$concordance
+    cindex_test[cv_iteration] = ifelse(is.na(c_test), 0, c_test)
+    cindex_train[cv_iteration] = ifelse(is.na(c_train), 0, c_train)
   }
-  return(c(mean(cindex_train), mean(cindex_test)))
+  
+  mean_train = ifelse( is.na(mean(cindex_train))==TRUE, 0, mean(cindex_train))
+  mean_test = ifelse( is.na(mean(cindex_test))==TRUE, 0, mean(cindex_test))
+  
+  return(c(mean_train,mean_test))
+  
 }
 
 
@@ -825,8 +852,11 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,
     params = var_sorted[1:grid_of_values[i, "p_cv"]]
     maxdepth = grid_of_values[i, "tree_depth"]
     minbucket = grid_of_values[i, "minbucket"]
-    bestcindex[i] = method_2A_tune(df_train, params, predict.factors, fixed_time=fixed_time,
-                                   n_cv = internal_cv_k, maxdepth = maxdepth, cp =0.001, minbucket = minbucket, seed_to_fix = seed_to_fix)[2]
+    bestcindex[i] = method_2A_tune(df_train, params, predict.factors, 
+                                   fixed_time=fixed_time,
+                                   n_cv = internal_cv_k, maxdepth = maxdepth, 
+                                   cp =0.005, minbucket = minbucket, 
+                                   seed_to_fix = seed_to_fix)[2]
     i=i+1
   }
   #print(grid_of_values[which.max(bestcindex),])
@@ -852,6 +882,7 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,
     if (sum(df_train$cluster_tree== clusters[i]) < 30){
       cox_i = coxph(as.formula(paste("Surv(time, event) ~ 1")),
                     data = df_train[df_train$cluster_tree== clusters[i],], x= TRUE)
+      cox_i$coefficients[is.na(cox_i$coefficients)] = 0
       cox_models_in_clusters[[i]] = cox_i
     }else{
       cox_i = coxph(as.formula(paste("Surv(time, event) ~", paste(c(predict.factors), collapse="+"))),
@@ -863,6 +894,7 @@ method_2A_train = function(df_train, predict.factors, fixed_time=10,
   }
   
   output = list()
+  output$vimp10 = var_importance[1:min(length(var_importance),15)]
   output$treemodel = rpart.m
   output$coxmodels = cox_models_in_clusters
   output$clusters = clusters
@@ -937,6 +969,7 @@ method_2A_cv = function(df, predict.factors,
   time_1 = Sys.time()
   print (time_1 - time_0)
   output$time = time_1 - time_0
+  
   return(output)
 }
 
@@ -986,6 +1019,7 @@ method_2B_tune = function(df_tune, params_for_tree , predict.factors, fixed_time
           return(c(NaN, NaN))
         }else{  #if 2-20 then just use a KM for survival prediction, no further model
           cox_i = coxph(as.formula(paste("Surv(time, event) ~ 1")),data = df_train_cv[df_train_cv$cluster_tree== clusters[i],], x= TRUE)
+          cox_i$coefficients[is.na(cox_i$coefficients)] = 0
         }
       }else{
         cox_i = coxph(as.formula(paste("Surv(time, event) ~", paste(c(predict.factors), collapse="+"))),
@@ -999,9 +1033,11 @@ method_2B_tune = function(df_tune, params_for_tree , predict.factors, fixed_time
       df_train_cv[df_train_cv$cluster_tree == clusters[i] ,"eventprob"] = 1- 
         pec::predictSurvProb(cox_i, df_train_cv[df_train_cv$cluster_tree == clusters[i] ,] , fixed_time)
     }
-    #check c-index 
-    cindex_test[cv_iteration] = survConcordance(Surv(df_test_cv$time, df_test_cv$event)~df_test_cv$eventprob)$concordance
-    cindex_train[cv_iteration] = survConcordance(Surv(df_train_cv$time, df_train_cv$event)~df_train_cv$eventprob)$concordance
+    #check c-index
+    c_test = concordancefit(Surv(df_test_cv$time, df_test_cv$event), -1*df_test_cv$eventprob)$concordance
+    c_train = concordancefit(Surv(df_train_cv$time, df_train_cv$event), -1*df_train_cv$eventprob)$concordance
+    cindex_test[cv_iteration] = ifelse(is.na(c_test), 0, c_test)
+    cindex_train[cv_iteration] = ifelse(is.na(c_train), 0, c_train)
   }
   return(c(mean(cindex_train), mean(cindex_test)))
 }
@@ -1075,6 +1111,7 @@ method_2B_train = function(df_train, predict.factors, fixed_time=10, seed_to_fix
     if (sum(df_train$cluster_tree== clusters[i]) < 30){
       cox_i = coxph(as.formula(paste("Surv(time, event) ~ 1")),
                     data = df_train[df_train$cluster_tree== clusters[i],], x= TRUE)
+      cox_i$coefficients[is.na(cox_i$coefficients)] = 0
       cox_models_in_clusters[[i]] = cox_i
     }else{
       cox_i = coxph(as.formula(paste("Surv(time, event) ~", paste(c(predict.factors), collapse="+"))),
@@ -1184,8 +1221,8 @@ method_3_tune = function(df_tune, params_for_tree= c("age", "bmi", "hyp"), predi
     df_test_cv$modcox_lp =   predict(modified_cox_cv, newdata = df_test_cv, type = "lp", se.fit = FALSE, reference = "zero") 
     
     #check c-index 
-    cindex_test[cv_iteration] = survConcordance(Surv(df_test_cv$time, df_test_cv$event)~df_test_cv$modcox_lp)$concordance
-    cindex_train[cv_iteration] = survConcordance(Surv(df_train_cv$time, df_train_cv$event)~df_train_cv$modcox_lp)$concordance
+    cindex_test[cv_iteration] = concordancefit(Surv(df_test_cv$time, df_test_cv$event), -1*df_test_cv$modcox_lp)$concordance
+    cindex_train[cv_iteration] = concordancefit(Surv(df_train_cv$time, df_train_cv$event), -1*df_train_cv$modcox_lp)$concordance
   }
   return(c(mean(cindex_train), mean(cindex_test)))
 }
@@ -1228,13 +1265,14 @@ method_3B_tune = function(df_tune, params_for_tree, predict.factors, fixed_time=
     modified_cox_cv = coxph(as.formula(paste("Surv(time, event) ~",
                                              paste(c(predict.factors, "cluster_tree"), collapse="+"))),
                             data = df_train_cv, x=TRUE)
+    modified_cox_cv$coefficients[is.na(modified_cox_cv$coefficients)] = 0
     
     df_train_cv$modcox_lp =  predict(modified_cox_cv, newdata = df_train_cv, type = "lp", se.fit = FALSE, reference = "zero") 
     df_test_cv$modcox_lp =   predict(modified_cox_cv, newdata = df_test_cv, type = "lp", se.fit = FALSE, reference = "zero") 
     
     #check c-index 
-    cindex_test[cv_iteration] = survConcordance(Surv(df_test_cv$time, df_test_cv$event)~df_test_cv$modcox_lp)$concordance
-    cindex_train[cv_iteration] = survConcordance(Surv(df_train_cv$time, df_train_cv$event)~df_train_cv$modcox_lp)$concordance
+    cindex_test[cv_iteration] = concordancefit(Surv(df_test_cv$time, df_test_cv$event), -1*df_test_cv$modcox_lp)$concordance
+    cindex_train[cv_iteration] = concordancefit(Surv(df_train_cv$time, df_train_cv$event), -1*df_train_cv$modcox_lp)$concordance
   }
   return(c(mean(cindex_train), mean(cindex_test)))
 }
