@@ -175,7 +175,7 @@ method_cox_train = function(df_train, predict.factors){
   #!!!!! We replace NA coefficients with 0 
   #!!!!! i.e. ignore predictors which the Cox model couldn't estimate)
   #!!!!! This way the model can still produce some predictions 
-  cox.m$coefficients[is.na(mcox$coefficients)] = 0
+  cox.m$coefficients[is.na(cox.m$coefficients)] = 0
   return (cox.m)
 }
 
