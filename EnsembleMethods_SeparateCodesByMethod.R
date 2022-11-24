@@ -165,9 +165,6 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
   return (statsdf)
 }
 
-mcox$coefficients[is.na(mcox$coefficients)] = 0
-predict(mcox)
-
 ############# Basic Cox Model functions (in the same format as other methods) ###############
 
 method_cox_train = function(df_train, predict.factors){
