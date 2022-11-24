@@ -76,9 +76,22 @@ ui <- fluidPage(
       numericInput(inputId = "fixed_time",
                    label = "Time point for event prediction:",
                    value = 5.0),
+      
+      numericInput(inputId = "randomseed_validation",
+                   label = "Random seed for calibration and validation",
+                   value = 42),
+      
+      numericInput(inputId = "k_outer",
+                   label = "K_Outer loop CV (for validation)",
+                   value = 3),
+      
+      numericInput(inputId = "k_inner",
+                   label = "K_ inner CV folds (model tuning)",
+                   value = 3),
+      
       inputPanel("",
                  numericInput(inputId = "randomseed",
-                              label = "Simulated data: random seed:",
+                              label = "Simulated data: random seed (generation):",
                               value = 42),
                  
                  numericInput(inputId = "N",
@@ -288,25 +301,28 @@ server <- function(input, output) {
     method_cox_cv(x, 
                   predict.factors, 
                   fixed_time = input$fixed_time, 
-                  cv_number = 3, 
-                  seed_to_fix = input$randomseed)
+                  cv_number = input$k_outer,  
+                  seed_to_fix = input$randomseed_validation)
   })
   
   Ens2_train_on_all <- reactive({
     x <- datasetInput()
     predict.factors <- predictfactors()
     
-    method_2A_train(x, predict.factors, fixed_time = input$fixed_time, 
-                    internal_cv_k =3, 
-                    seed_to_fix = input$randomseed)
+    method_2A_train(x, predict.factors, 
+                    fixed_time = input$fixed_time, 
+                    internal_cv_k = input$k_inner, 
+                    seed_to_fix = input$randomseed_validation)
   })
   
   Ens3_train_on_all <- reactive({
     x <- datasetInput()
     predict.factors <- predictfactors()
     
-    method_3_train(x, predict.factors, fixed_time = input$fixed_time,  
-                   internal_cv_k = 3, seed_to_fix = input$randomseed)
+    method_3_train(x, predict.factors, 
+                   fixed_time = input$fixed_time,  
+                   internal_cv_k = input$k_inner, 
+                   seed_to_fix = input$randomseed_validation)
   })
   
   CoxPH_train_on_all <- reactive({
@@ -350,11 +366,12 @@ server <- function(input, output) {
     method_srf_cv(x, 
                   predict.factors, 
                   fixed_time = input$fixed_time, 
-                  cv_number = 3, 
-                  internal_cv_k = 3,
-                  seed_to_fix = input$randomseed)
+                  cv_number = input$k_outer, 
+                  internal_cv_k = input$k_inner,
+                  seed_to_fix = input$randomseed_validation)
   })
   
+
   output$srf_table <- renderPrint({
     x <- datasetInput()
     SRF_cv()
@@ -400,9 +417,9 @@ server <- function(input, output) {
     method_1A_cv(x, 
                  predict.factors, 
                  fixed_time = input$fixed_time, 
-                 cv_number = 3, 
-                 internal_cv_k = 3,
-                 seed_to_fix = input$randomseed)
+                 cv_number = input$k_outer, 
+                 internal_cv_k = input$k_inner,
+                 seed_to_fix = input$randomseed_validation)
   })
   
   output$ens1_table <- renderPrint({
@@ -417,9 +434,9 @@ server <- function(input, output) {
     method_2A_cv(x, 
                  predict.factors, 
                  fixed_time = input$fixed_time, 
-                 cv_number = 3, 
-                 internal_cv_k = 3,
-                 seed_to_fix = input$randomseed)
+                 cv_number = input$k_outer, 
+                 internal_cv_k = input$k_inner,
+                 seed_to_fix = input$randomseed_validation)
   })
   
   output$ens2_table <- renderPrint({
@@ -433,9 +450,9 @@ server <- function(input, output) {
     method_3_cv(x, 
                 predict.factors, 
                 fixed_time = input$fixed_time, 
-                cv_number = 3, 
-                internal_cv_k = 3,
-                seed_to_fix = input$randomseed)
+                cv_number = input$k_outer, 
+                internal_cv_k = input$k_inner,
+                seed_to_fix = input$randomseed_validation)
   })
   
   output$ens3_table <- renderPrint({
