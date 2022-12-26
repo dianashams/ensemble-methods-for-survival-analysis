@@ -112,7 +112,7 @@ survival_prob_km = function(df_km_train, times, estimate_censoring = FALSE){
 }
 
 method_any_validate = function(y_predict, times_to_predict, df_train, 
-                               df_test, weighted = TRUE){
+                               df_test, weighted = TRUE, alpha = "mean"){
   
   #This function computes auc, brier score, c-index,
   # calibration slope and alpha for df_test
@@ -146,7 +146,9 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     #' will be in the same order as LPs at any time point
     if (class(try(concordancefit(Surv(df_test$time, df_test$event), -1*y_hat), silent=TRUE))=="try-error"){
       c_score[i]= NaN }else{
-        c_score[i]= concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance}
+        if (is.null(concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance)) {c_score[i]= NaN
+        }else{c_score[i]=concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance}
+      }
     
     # can add later confusion matrix, but also need to find Youden point instead of 0.5
     # confmatrix = timeROC::SeSpPPVNPV(0.5, T = df_test$time,delta=df_test$event,
@@ -181,8 +183,12 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     }else{
       calibration_slope[i] = glm(y_actual_i ~ y_hat_hat,
                                  family = binomial(link = "logit"))$coefficients[2]
-      calibration_alpha[i] = glm(y_actual_i ~ offset(y_hat_hat),
-                                 family = binomial(link = "logit"))$coefficients[1]
+      if (alpha == "logit"){ #take alpha from alpha: logit(y)~ logit(y_hat) + alpha
+        calibration_alpha[i] = glm(y_actual_i ~ offset(y_hat_hat),
+                                   family = binomial(link = "logit"))$coefficients[1]
+      }else{  #take alpha as alpha= mean(y) - mean(y_hat)
+        calibration_alpha[i] =  mean(y_actual_i) - mean(df_test_in_scope$predict_ti)
+      }
     }#end else
   } #end for
   
