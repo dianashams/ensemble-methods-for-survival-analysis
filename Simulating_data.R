@@ -118,3 +118,82 @@ simulatedata_lin_nonPH = function (N=1000, observe_time =10,
   return (df)
 }
 
+mean_weibull=function(lambda, rho_w){ 
+  # h0(t)=??*rho_w*t^(rho_w???1)    S(t) = exp(-lambda*t^rho_w)
+  # ET = (1/lambda)^(1/rho_w) * gamma(1+1/rho_w)
+  return(lambda^(-1/rho_w)* gamma(1+1/rho_w))}
+
+plot_weibull_h= function(lambda =0.027, rho_w=1.5, title = "Baseline hazard"){
+  # h0(t)=lambda*rho_w*t^(rho_w???1)    S(t) = exp(-lambda*t^rho_w)
+  t = seq(0,1,0.02)
+  h=function(x){return(lambda*rho_w*x^(rho_w-1))}
+  plot(t, h(t), main =title)
+}
+
+linear_beta = function(df){
+  return(exp(0.4*df$age + 1.0*df$bmi + 0.7*df$hyp))}
+
+nonlinear_beta = function(df){
+  #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
+  bmi_beta = ifelse((df$bmi < -1.5)|(df$bmi>1.5), 2, ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
+  #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
+  age_beta = ifelse( (df$age>=1), 1, 0)
+  return(exp(bmi_beta + (df$hyp*0.7)+ df$age*0.2 + age_beta))
+  }
+
+xt_beta = function(df){
+  #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
+  bmi_beta = ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2, 
+                     ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
+  
+  # hypertension x age interaction
+  hyp_beta = ifelse((df$age>=1 & df$hyp == 1), 2, 
+                    ifelse((df$age<1 & df$hyp == 1),1,0))
+  #simulating event time
+  return(exp(bmi_beta + hyp_beta+ df$age*0.2))
+}
+
+simulate_population = function(N=1000, randomseed=42){
+ set.seed(randomseed)
+ df = data.frame(age = round(runif(N, -1.73, 1.73),1),
+                bmi = round(rnorm(N, 0, 1),1),  
+                hyp = rbinom(N,1,0.20),
+                sex = rbinom(N,1,0.5))
+ return(df)}
+
+df_event_times = function(exp_beta, df, N, observe_time, 
+   percentcensored,randomseed,lambda,distr, rho_w, drop_out){
+  #simulate event times
+  if (distr =="Exp") {
+    # Exponential time distribution, h0(t)=??=0.1  with shape ??>0 and scale ??>0
+    {set.seed(randomseed);  event_time = rexp(N, lambda * exp_beta)}
+  }else{
+    # simulate Weibull distribution 
+    # h0(t)=lambda*rho*t^(rho???1), shape rho_w>0,  scale lambda>0. 
+    # If rho=1, it is exponential
+    # rho>1 => upward sloping, rho<1 => downward, rho=1 constant (exponential)
+    {set.seed(randomseed); v <- runif(n=N)}
+    event_time = (- log(v) / (lambda * exp_beta))^(1/rho_w) #Weibull density
+  }
+  
+  # re-scale the time to have 1-percentcensored of events=1
+  # by the observe_time
+  final_time = quantile(event_time, 1-percentcensored)
+  df$event_time = 0.001 + pmin(round(event_time/final_time*observe_time, 3),observe_time) #scale to observe_time
+  # generate drop-out times for random drop_out % observations
+  if (drop_out >0 ){
+    set.seed(randomseed+1)
+    randcentime = runif(round(N*drop_out,0), 0, observe_time)
+    cens_obs = sample.int(nrow(df), round(N*drop_out,0))
+    df[cens_obs, "cens_time"] = randcentime
+    df[-cens_obs, "cens_time"] = observe_time
+  } else {df[, "cens_time"] = observe_time}
+  
+  #final time and event definition 
+  #event =1 if event time < cens_time and observe_time
+  df$time = pmin(df$event_time, df$cens_time, observe_time)
+  df$event = ifelse(df$event_time == df$time, 1, 0)
+  
+  return (df)
+}
+
