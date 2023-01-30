@@ -24,191 +24,97 @@ populationstats = function(df_stats, time_f,  namedf = "df"){
 
 ###########################################################################
 
+# These functions return simulated data with exponential or weibull distributions
+# 0.5 / 0.75 / 0.9 - by time = 10 (scaled) expected number of events
+# distr = "Exp" or "Weibull"  
+# (rho_w =0.5, lambda = 0.447) hazard slopes down
+# (rho_w=1.5, lambda 0.027) hazard up and down;
+# drop-out - additional drop out before the end of study (expected, independent from event)
+
+
 simulatedata_linear = function (N=1000, observe_time =10, 
-                                percentcensored = 0.0, randomseed = 100){
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, -1.73, 1.73),1),
-                  bmi = round(rnorm(N, 0, 1),1),  
-                  hyp = rbinom(N,1,0.20),
-                  gender = rbinom(N,1,0.5))
+                      percentcensored = 0.75,  
+                      randomseed = 100,lambda = 0.1,
+                      distr = "Exp",  rho_w = 1, 
+                      drop_out = 0.3){ 
+  #simulate the data
+  df = simulate_population(N, randomseed)
+  # calculate betas
+  exp_beta = linear_beta(df)
+  df["exp_beta"] = exp_beta
+  # simulate censored and event times 
+  df = df_event_times(exp_beta=exp_beta, df=df, N=N, observe_time=observe_time, 
+                      percentcensored=percentcensored,randomseed= randomseed+1,
+                      lambda = lambda, distr = distr, rho_w = rho_w, drop_out=drop_out)
+  return(df)
+}
   
-  df$event_time = 0.01+ round((rexp(N, 0.1*exp(0.4*df$age + 1.0*df$bmi + 0.7*df$hyp))),2)
-
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
-    df[cens_obs, "cens_time"] = randcentime
-    df[-cens_obs, "cens_time"] = observe_time
-  } else {df[, "cens_time"] = observe_time}
-
-  df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0); sum(df$event ==1)/N
-
-  return (df)
+simulatedata_nonlinear = function (N=1000, observe_time =10, 
+                                percentcensored = 0.75,  
+                                randomseed = 100,lambda = 0.1,
+                                distr = "Exp",  rho_w = 1, 
+                                drop_out = 0.3){ 
+  #simulate the data
+  df = simulate_population(N, randomseed)
+  # calculate betas
+  exp_beta = nonlinear_beta(df)
+  # simulate censored and event times 
+  df = df_event_times(exp_beta=exp_beta, df=df, N=N, observe_time=observe_time, 
+                      percentcensored=percentcensored,randomseed= randomseed+1,
+                      lambda = lambda, distr = distr, rho_w = rho_w, drop_out=drop_out)
+  return(df)
 }
 
-simulatedata_nonlinear = function (N=1000, observe_time =10, percentcensored = 0.5, randomseed = 100){
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, -1.73,1.73),1),
-                  bmi = round(rnorm(N, 0, 1),1),  
-                  hyp = rbinom(N,1,0.20),
-                  gender = rbinom(N,1,0.5))
-  
-  #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
-  bmi_beta = ifelse((df$bmi < -1.5)|(df$bmi>1.5), 2, 
-                     ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
-  #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
-  age_beta = ifelse( (df$age>=1), 1, 0)
-  #simulating event time
-  df$event_time = 0.01+ round((rexp(N, 0.08*exp(bmi_beta + 
-                        (df$hyp*0.7)+ df$age*0.2 + age_beta))),2)
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
-    df[cens_obs, "cens_time"] = randcentime
-    df[-cens_obs, "cens_time"] = observe_time
-  } else {df[, "cens_time"] = observe_time}
-  
-  df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0); sum(df$event ==1)/N
-  return (df)
+
+simulatedata_crossterms = function (N=1000, observe_time =10, 
+                                percentcensored = 0.75,  
+                                randomseed = 100,lambda = 0.1,
+                                distr="Exp",  rho_w = 1, 
+                                drop_out = 0.3){ 
+  #simulate the data
+  df = simulate_population(N, randomseed)
+  # calculate betas
+  exp_beta = xt_beta(df)
+  # simulate censored and event times 
+  df = df_event_times(exp_beta=exp_beta, df=df, N=N, observe_time=observe_time, 
+                      percentcensored=percentcensored,randomseed= randomseed+1,
+                      lambda = lambda, distr = distr, rho_w = rho_w, drop_out=drop_out)
+  return(df)
 }
 
-simulatedata_crossterms = function (N=1000, 
-                                    observe_time =10, 
-                                    percentcensored = 0.0, 
-                                    randomseed=100){
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, -1.73,1.73),1),
-                  bmi = round(rnorm(N, 0, 1),1),  
-                  hyp = rbinom(N,1,0.2),
-                  gender = rbinom(N,1,0.5))
+simulatedata_lin_nonPH = function (N=1000, observe_time =10, 
+                                percentcensored = 0.75,  
+                                randomseed = 100,lambda = 0.1,
+                                drop_out = 0.3){ 
+  #simulate the data
   
-  #BMI impact is 2 for very low and high levels, 1 for high/ low level, 0 for normal range
-  bmi_beta = ifelse( (df$bmi < -1.5)|(df$bmi>1.5), 2, 
-                     ifelse( (df$bmi < -1)|(df$bmi>1), 1, 0))
-  
-  # hypertension x age interaction
-  hyp_beta = ifelse((df$age>=1 & df$hyp == 1), 2, 
-                    ifelse((df$age<1 & df$hyp == 1),1,0))
-  #simulating event time
-  df$event_time = 0.01 + round((rexp(N, 0.01+ 0.07*exp(bmi_beta + 
-                                    (hyp_beta)+ df$age*0.2))),2)
-  
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
+  df = simulate_population(N, randomseed)
+  # calculate betas
+  exp_beta = exp(0.4*df$age + 1.0*df$bmi+1*df$hyp+0.5*df$sex)
+  df["exp_beta"] = exp_beta
+  df["shape_rho"] = ifelse(df$sex==1, 2.5, 0.5)
+  #simulate event times
+  {set.seed(randomseed); v <- runif(n=N)}
+  event_time = (- log(v) / (lambda * df$exp_beta))^(1/df$shape_rho) #Weibull density
+
+  # re-scale the time to have 1-percentcensored of events=1
+  # by the observe_time
+  final_time = quantile(event_time, 1-percentcensored)
+  df$event_time = 0.001 + pmin(round(event_time/final_time*observe_time, 3),observe_time) #scale to observe_time
+  # generate drop-out times for random drop_out % observations
+  if (drop_out >0 ){
+    set.seed(randomseed+1)
+    randcentime = runif(round(N*drop_out,0), 0, observe_time)
+    cens_obs = sample.int(nrow(df), round(N*drop_out,0))
     df[cens_obs, "cens_time"] = randcentime
     df[-cens_obs, "cens_time"] = observe_time
   } else {df[, "cens_time"] = observe_time}
   
+  #final time and event definition 
+  #event =1 if event time < cens_time and observe_time
   df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0); sum(df$event ==1)/N
+  df$event = ifelse(df$event_time == df$time, 1, 0)
   
-  return (df)
-}
-
-#################################################################
-
-simulatedata_linear_0 = function (N=1000,  observe_time =10, 
-                                  percentcensored = 0.0, randomseed = 100){
-  #old versions
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, 20,75),1),
-                  bmi = round(rnorm(N, 26, 3),1),  
-                  hyp = rbinom(N,1,0.10),
-                  gender = rbinom(N,1,0.5))
-  
-  df$bmi_ = (df$bmi-26)/3
-  df$age_ = (df$age - 50)/15
-  #BMI impact is 1 for low and high levels, 0 in-between
-  bmi_beta = 1
-  #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
-  age_beta = ifelse( (df$age>=55), 1, 0)
-  
-  df$event_time = 0.01+ round((rexp(N, 0.15*exp(1.0*df$bmi_ + 0.7*df$hyp + 0.4*df$age_))),2)
-  #make sure event-time is not too small, fudge a bit if so
-  #df$event_time = ifelse(df$event_time<0.5, round(runif(1,0.2, 0.5),1), df$event_time)  
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
-    df[cens_obs, "cens_time"] = randcentime
-    df[-cens_obs, "cens_time"] = observe_time
-  } else {df[, "cens_time"] = observe_time}
-  
-  df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0)
-  
-  return (df)
-}
-
-simulatedata_nonlinear_0 = function(N=1000, observe_time =10, percentcensored = 0.1, randomseed = 100){
-  #old versions
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, 20,75),1),
-                  bmi = round(rnorm(N, 26, 3),1),  
-                  hyp = rbinom(N,1,0.10),
-                  gender = rbinom(N,1,0.5))
-  
-  df$bmi_ = (df$bmi-26)/3
-  #BMI impact is 1 for low and high levels, 0 in-between
-  bmi_beta = ifelse( (df$bmi_ < -1)|(df$bmi_>1), 1, ifelse( (df$bmi_ < -1.75)|(df$bmi_>1.75), 2, 0))
-  #Age impact is 1 for age>=55; linear age impact is also present, but is smaller than in linear simulation
-  age_beta = ifelse( (df$age>=55), 1, 0)
-  
-  df$event_time = 0.01+ round((rexp(N,0.15*exp(bmi_beta + (df$hyp*0.7)+ (df$age-50)/15*0.4 + age_beta))),2)
-  #make sure event-time is not too small, fudge a bit if so
-  #df$event_time = ifelse(df$event_time<0.5, round(runif(1,0.2, 0.5),1), df$event_time)  
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
-    df[cens_obs, "cens_time"] = randcentime
-    df[-cens_obs, "cens_time"] = observe_time
-  } else {df[, "cens_time"] = observe_time}
-  
-  
-  df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0); sum(df$event ==1)/N
-  
-  df$age_ = (df$age - 50)/15
-  return (df)
-}
-
-simulatedata_crossterms_0 = function (N=1000, leftcenstime=0, observe_time =10, percentcensored = 0.1, randomseed=100){
-  #old versions
-  set.seed(randomseed)
-  df = data.frame(age = round(runif(N, 25,75),1),
-                  bmi = round(rnorm(N, 26, 3),1),  
-                  hyp = rbinom(N,1,0.25),
-                  gender = rbinom(N,1,0.5))
-  df$bmi_ = (df$bmi-26)/3
-  #BMI impact is 1 for low and high levels, 0 in-between
-  bmi_beta = ifelse( (df$bmi_ < -1)|(df$bmi_>1), 1, ifelse( (df$bmi_ < -1.75)|(df$bmi_>1.75), 2, 0))
-  
-  # hypertension x age interaction
-  hyp_beta = ifelse((df$age>=50 & df$hyp == 1), 2, ifelse((df$age<50 & df$hyp == 1),1,0))
-  
-  df$event_time = 0.01 + round((rexp(N, 0.01+ 0.15*exp(bmi_beta + (hyp_beta)+ (df$age - 50)/15*0.2))),2)
-  #make sure event-time is not too small, fudge a bit if so
-  #df$event_time = ifelse(df$event_time<0.5, round(runif(1,0.2, 0.5),1), df$event_time)  
-  
-  #add censored / drop-out observations
-  if (percentcensored >0 ){
-    randcentime = runif(round(N*percentcensored,0),0,0 + observe_time)
-    cens_obs = sample.int(nrow(df), round(N*percentcensored,0))
-    df[cens_obs, "cens_time"] = randcentime
-    df[-cens_obs, "cens_time"] = observe_time
-  } else {df[, "cens_time"] = observe_time}
-  
-  df$time = pmin(df$event_time, df$cens_time, observe_time)
-  df$event = ifelse(df$event_time <= df$time, 1, 0); sum(df$event ==1)/N
-  
-  df$age_ = (df$age - 50)/15
   return (df)
 }
 
