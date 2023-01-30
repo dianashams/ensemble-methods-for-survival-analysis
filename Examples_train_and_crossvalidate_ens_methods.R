@@ -1,14 +1,22 @@
+# ################################################################################################################
+# This file contains illutrative examples on how to train and internally cross-validate projects' ensemble methods  
+# ################################################################################################################
+# Jan 2023 version
+# ################################################################################################################
 
+# simulate the data 
 d1 = simulatedata_linear(1000, percentcensored = 0.5, randomseed=42, distr= "Exp")
 d2 = simulatedata_nonlinear(1000, percentcensored = 0.5, randomseed=42, distr= "Weibull", rho_w=1.5)
 d3 = simulatedata_crossterms(1000, percentcensored = 0.5, randomseed=42, distr= "Weibull", rho_w=0.8)
 d4 = simulatedata_lin_nonPH(1000, percentcensored = 0.5,  randomseed=42)
 params = names(d_xt)[1:4] # "age", "bmi", "hyp", "sex
 
+# data description
 populationstats(d1, time_f = 10, "linear")
 populationstats(d2, time_f = 10, "linear")
 populationstats(d3, time_f = 10, "linear")
 populationstats(d4, time_f = 10, "linear")
+
 
 # Train and Cross-validate all methods for cross-term data d3 (change it to d1-d4 or your data)
 
