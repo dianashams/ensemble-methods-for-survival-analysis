@@ -13,4 +13,4 @@ Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox M
 
 ### How to use this code ###
 This is not a package (yet), so please download the files, then source "R_simulating_survival_data.R", "Ensemble_Methods.R". Then you can run "Examples_simulated_data.R" or "Example_GBSG2.R" to see the methods in action, i.e. training and computing its apparent and internally-validated performance metrics.
-*All functions assume that the data is a data frame with "time" and "event" columns defining a survival outcome; also one has to pass a list containing the names of columns with predictors to be used by a model.*
+**All functions assume the data is a data frame,  "time" and "event" columns define survival outcome; most functions require a list of column names that correspond to model's predictors**
