@@ -54,6 +54,7 @@ bs_surv = function(y_predicted_newdata,
   #'This function calculates time-dependent BrierScore for df_newdata,
   #' overall same as
   #' https://scikit-survival.readthedocs.io/en/stable/api/generated/sksurv.metrics.brier_score.html#sksurv.metrics.brier_score
+  #' https://github.com/sebp/scikit-survival/blob/v0.19.0.post1/sksurv/metrics.py#L524-L644
   #' it uses IPCW (inverse probability of censoring weights), computed with K-M curve
   #' where events are censored events from train data. i.e. df_brier_train
   #' returns vector of BS for each time in time_points
@@ -210,7 +211,7 @@ method_any_cv = function(df, predict.factors, train_function, predict_function, 
 
 
 method_any_validate = function(y_predict, times_to_predict, df_train, 
-                               df_test, weighted = TRUE, alpha = "mean"){
+                               df_test, weighted = TRUE, alpha = "logit"){
   
   #This function computes auc, brier score, c-index,
   # calibration slope and alpha for df_test
@@ -260,15 +261,15 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     # cut 0 and 1 predicted probabilities for the logit to work:
     df_test$predict_ti = pmax(pmin(y_hat, 0.99999), 0.00001)
     
+    #Take out censored observations before t_i,ie leaving those which state we know:
+    df_test_in_scope = df_test[(df_test$time >= t_i) | (df_test$time <t_i & df_test$event ==1), ]
+
     #scaled BS = 1 - BS / (BS @ all predictions == prevalence by t_i )
-    brier_score_base_i = bs_surv(rep(mean(df_test$event_ti),dim(df_test)[1]),
-                                 df_train, df_test, t_i, weighted = weighted)
+    brier_score_base_i = bs_surv(rep(mean(df_test$event_ti),dim(df_test_in_scope)[1]),
+                                 df_train, df_test_in_scope, t_i, weighted = weighted)
     brier_score_scaled[i]= 1 - (brier_score[i]/brier_score_base_i)
     
-    #Calibration slope and alpha. Take out censored observations before t_i,
-    #ie leaving those which state we know:
-    df_test_in_scope = df_test[(df_test$time >= t_i) | (df_test$time <t_i & df_test$event ==1), ]
-    
+    #Calibration slope and alpha. 
     y_hat_hat = log(df_test_in_scope$predict_ti / (1-df_test_in_scope$predict_ti))
     y_actual_i = df_test_in_scope$event_ti
     
@@ -286,8 +287,8 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
       }else{  #take alpha as alpha= mean(y) - mean(y_hat)
         calibration_alpha[i] =  mean(y_actual_i) - mean(df_test_in_scope$predict_ti)
       }
-    }#end else
-  } #end for
+    }#end "else"
+  } #end "for"
   
   output = data.frame("T" = times_to_predict,
                       "AUCROC" = auc_score,
