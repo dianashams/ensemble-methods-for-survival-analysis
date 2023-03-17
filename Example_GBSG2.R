@@ -10,6 +10,7 @@
 
 # load GBSG2 data 
 library(survival)
+library(pec) #for GBSG2 data
 data("GBSG2")
 
 # re-format the data - hot-coding binary variables horTh and menostat, 
