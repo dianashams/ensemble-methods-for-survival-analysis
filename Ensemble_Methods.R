@@ -210,6 +210,7 @@ method_any_cv = function(df, predict.factors, train_function, predict_function, 
 }
 
 
+
 method_any_validate = function(y_predict, times_to_predict, df_train, 
                                df_test, weighted = TRUE, alpha = "logit"){
   
@@ -237,13 +238,20 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     #' compute time-dependent Brier score:
     if (class(try(bs_surv(y_hat, df_train, df_test, t_i, weighted = weighted), silent=TRUE))=="try-error"){
       brier_score[i] = NaN}else{
-        brier_score[i]= bs_surv(y_hat, df_train, df_test, t_i, weighted = weighted)}
+        brier_score[i]= bs_surv(y_hat, df_train, df_test, t_i, weighted = weighted)
+        
+        brier_score_base_i = bs_surv(rep(mean((df_test$event)*(df_test$time<=t_i)),dim(df_test)[1]),
+                                     df_train, df_test, t_i, weighted = weighted)
+        
+        brier_score_scaled[i]= 1 - brier_score[i] / brier_score_base_i
+      }
     
     #' compute concordance - time-dependent in a sense that a predictor is event probability at t_i:
     #' for Cox model it is the same for each time, as event prob
     #' will be in the same order as LPs at any time point
     if (class(try(concordancefit(Surv(df_test$time, df_test$event), -1*y_hat), silent=TRUE))=="try-error"){
-      c_score[i]= NaN }else{
+      c_score[i]= NaN 
+      }else{
         if (is.null(concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance)) {c_score[i]= NaN
         }else{c_score[i]=concordancefit(Surv(df_test$time, df_test$event), -1*y_hat)$concordance}
       }
@@ -254,7 +262,7 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     # c(as.double(confmatrix$TP[2]), as.double(confmatrix$FP[2]),
     # as.double(confmatrix$PPV[2]), as.double(confmatrix$NPV[2]))
     
-    # compute scaled Brier score, and calibration slope and alpha:
+    # compute calibration slope and alpha:
     # 1/0 by t_i:
     df_test$event_ti = ifelse(df_test$time <= t_i & df_test$event ==1, 1, 0)
     
@@ -264,11 +272,6 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
     #Take out censored observations before t_i,ie leaving those which state we know:
     df_test_in_scope = df_test[(df_test$time >= t_i) | (df_test$time <t_i & df_test$event ==1), ]
 
-    #scaled BS = 1 - BS / (BS @ all predictions == prevalence by t_i )
-    brier_score_base_i = bs_surv(rep(mean(df_test$event_ti),dim(df_test_in_scope)[1]),
-                                 df_train, df_test_in_scope, t_i, weighted = weighted)
-    brier_score_scaled[i]= 1 - (brier_score[i]/brier_score_base_i)
-    
     #Calibration slope and alpha. 
     y_hat_hat = log(df_test_in_scope$predict_ti / (1-df_test_in_scope$predict_ti))
     y_actual_i = df_test_in_scope$event_ti
@@ -300,7 +303,6 @@ method_any_validate = function(y_predict, times_to_predict, df_train,
   )
   return (output)
 }
-
 
 eligible_params = function(params, df){
   #'This function checks eligible predictors from params list for split
