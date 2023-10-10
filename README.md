@@ -1,6 +1,6 @@
 ### Ensemble methods for survival analysis
 
-### The functions are now packed into "ensemblesurv" [package](https://github.com/dianashams/ensemblesurv) Please move to that page, as the code will be now updated there.
+### The functions are now also packed into "ensemblesurv" [package](https://github.com/dianashams/ensemblesurv).
 
 #### !!! Warning: Note the project is at the development stage, so the code can change without any notification. The functions are not user-friendly to the extent they are intended to be once the project is completed.  Debugging and further nested cross-validation functionality is being done. 
 #### Feel free to upload and use the code, however some bits may not be consistent (yet), use it responsibly in your project 
