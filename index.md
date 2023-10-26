@@ -15,9 +15,11 @@ We had health outcomes in mind (e.g. a disease onset) and aimed to develop user-
 All the code is in R, and can be found [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
 
 ### Methods  
-The methods' description  and initial results were presented at the [talk](https://youtu.be/1Z8C0pAi_Cs) at the [NIHR Maudsley Biomedical Research Center Prediction Modelling Group](https://www.maudsleybrc.nihr.ac.uk/facilities/prediction-modelling-presentations/) meeting (September, 2021). 
+The methods' description  and initial results were presented at the [talk](https://youtu.be/1Z8C0pAi_Cs) at the [NIHR Maudsley Biomedical Research Center Prediction Modelling Group](https://www.maudsleybrc.nihr.ac.uk/facilities/prediction-modelling-presentations/) meeting (September, 2021). More details are in the [AIAI 2022 conference paper](https://link.springer.com/chapter/10.1007/978-3-031-08337-2_15)[1]. 
 
-More details are in the [AIAI 2022 conference paper](https://link.springer.com/chapter/10.1007/978-3-031-08337-2_15)[1].
+Graphical summary of the methods:
+
+![image](ensemble_methods_one_slide.png)
 
 ### Spin-off project: R package **survcompare** to quantify survival data non-linearity and compare Cox-PH and Survival Random Forest
 The first ensemble method described in the paper [1] is now available as a stand alone R package. It can be installed from source, and will soon be available on CRAN. See more details on the [survcompare page](https://github.com/dianashams/survcompare). 
