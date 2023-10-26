@@ -2,7 +2,7 @@
 
 Survival analysis is a collection of methods that analyse time-to-event data. The methods are used to estimate distribution of event times in a given population, and model its dependence on individual risk factors. The applications could be estimating a proportion of the initial population for which the event will happen by a certain point, or how the rate of event changes with time. It can also be employed to understand an impact of a risk factor, or make individual predictions on time-to-event. "Population" can be bacteria in a dish, group of people, group of financial companies, or app users; an event can be death, disease onset, cancer recovery, firm's bankruptcy, or unsubscribing from an app. 
 
-We primarily had health outcomes in mind (e.g. a disease onset) and tried to developed user-friendly functions that enhance classical Cox proportionate hazards model,  which is widely used in health research, with machine learning algorithms such as survival decision trees and survival random forest. While mixing classical and machine learning algorithms, we aimed to 
+We had health outcomes in mind (e.g. a disease onset) and aimed to develop user-friendly functions that enhance classical Cox proportionate hazards model with machine learning algorithms. The Cox model is one of the most popular model for health outcomes, and is essentially a general linear regression model. By embedding survival decision trees and survival random forest into the Cox model, we aimed to 
 
 * boost predictive performance while estimating time-to-event by a given time point, 
 
@@ -14,10 +14,13 @@ We primarily had health outcomes in mind (e.g. a disease onset) and tried to dev
 
 All the code is in R, and can be found [here](https://github.com/dianashams/ensemble-methods-for-survival-analysis)
 
-#### Methods  
+### Methods  
 The methods' description  and initial results were presented at the [talk](https://youtu.be/1Z8C0pAi_Cs) at the [NIHR Maudsley Biomedical Research Center Prediction Modelling Group](https://www.maudsleybrc.nihr.ac.uk/facilities/prediction-modelling-presentations/) meeting (September, 2021). 
 
 More details are in the [AIAI 2022 conference paper](https://link.springer.com/chapter/10.1007/978-3-031-08337-2_15)[1].
+
+### Spin-off project: R package **survcompare** to quantify survival data non-linearity and compare Cox-PH and Survival Random Forest
+The first ensemble method described in the paper [1] is now available as a stand alone R package. It can be installed from source, and will soon be available on CRAN. See more details on the [survcompare page](https://github.com/dianashams/survcompare). 
 
 #### Links and references
 [1] Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox Model and Tree-Based Algorithms to Boost Performance and Preserve Interpretability for Health Outcomes. In IFIP International Conference on Artificial Intelligence Applications and Innovations (pp. 170-181). Springer, Cham.
