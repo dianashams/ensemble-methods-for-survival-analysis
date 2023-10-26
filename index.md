@@ -21,8 +21,13 @@ Graphical summary of the methods:
 
 ![image](ensemble_methods_one_slide.png)
 
-### Spin-off project: R package **survcompare** to quantify survival data non-linearity and compare Cox-PH and Survival Random Forest
-The first ensemble method described in the paper [1] is now available as a stand alone R package. It can be installed from source, and will soon be available on CRAN. See more details on the [survcompare page](https://github.com/dianashams/survcompare). 
+### Ensemble 1 as an R package **survcompare** 
+
+The first ensemble method described in the paper [1] is now available as a stand alone R package. By comparing prediction performance of the Cox-PH and ensemble of Cox-PH and Survival Random Forest, it tests the presense of non-linearity and interactions in the data, and quantifies interpretability - accuracy trade off. That is, what gain in predictive accuracy one may get by employing a more complex model versus a baseline Cox-PH.
+
+The package can be installed from source, and will soon be available on CRAN. More details and the code is available at [survcompare page](https://github.com/dianashams/survcompare). 
+
+![image](survcompare_cartoon.png)
 
 #### Links and references
 [1] Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox Model and Tree-Based Algorithms to Boost Performance and Preserve Interpretability for Health Outcomes. In IFIP International Conference on Artificial Intelligence Applications and Innovations (pp. 170-181). Springer, Cham.
