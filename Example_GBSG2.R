@@ -42,7 +42,7 @@ concordancefit(Surv(gbsg_data$time, gbsg_data$event),1-p10)$concordance #0.6879
 #other stats
 method_any_validate(p10, final_time, gbsg_data, gbsg_data)
 #  T      AUCROC       BS  BS_scaled   C_score  Calib_slope  Calib_alpha
-#  5   0.7440482 0.210829 0.1909064 0.6879283    1.409447   0.1560888
+#  5   0.7440482 0.210829 0.1909064 0.6879283    1.409447   0.7512217
 
 #internal 3-fold CV
 coxcv = method_any_cv(gbsg_data, params, method_cox_train, method_cox_predict, 
@@ -50,20 +50,20 @@ coxcv = method_any_cv(gbsg_data, params, method_cox_train, method_cox_predict,
                       cv_number = 10, seed_for_cv = 2024, parallel=TRUE)
 round(coxcv$testaverage,3)
 #     T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-# 5.000       0.734       0.216       0.168       0.677       1.464       0.158       1.000   
+# 5.000       0.734       0.216       0.168       0.677       1.464       0.773       1.000   
 
 # round(coxcv$test,3)
 #    T AUCROC    BS BS_scaled C_score Calib_slope Calib_alpha test cv_n
-# 1  5  0.757 0.192     0.238   0.656       1.689       0.218    1    1
-# 2  5  0.702 0.201     0.078   0.691       0.412       0.087    1    2
-# 3  5  0.806 0.160     0.314   0.677       2.004       0.210    1    3
-# 4  5  0.622 0.220     0.061   0.629       0.811       0.287    1    4
-# 5  5  0.675 0.272     0.095   0.705       1.195       0.141    1    5
-# 6  5  0.790 0.204     0.228   0.721       2.065       0.145    1    6
-# 7  5  0.794 0.212     0.208   0.666       2.374       0.127    1    7
-# 8  5  0.753 0.241     0.131   0.698       0.860       0.082    1    8
-# 9  5  0.680 0.231     0.119   0.665       1.797       0.103    1    9
-# 10 5  0.758 0.224     0.208   0.666       1.434       0.178    1   10
+# 1  5  0.757 0.192     0.238   0.656       1.689       1.055    1    1
+# 2  5  0.702 0.201     0.078   0.691       0.412       0.417    1    2
+# 3  5  0.806 0.160     0.314   0.677       2.004       1.103    1    3
+# 4  5  0.622 0.220     0.061   0.629       0.811       1.442    1    4
+# 5  5  0.675 0.272     0.095   0.705       1.195       0.650    1    5
+# 6  5  0.790 0.204     0.228   0.721       2.065       0.706    1    6
+# 7  5  0.794 0.212     0.208   0.666       2.374       0.583    1    7
+# 8  5  0.753 0.241     0.131   0.698       0.860       0.422    1    8
+# 9  5  0.680 0.231     0.119   0.665       1.797       0.448    1    9
+# 10 5  0.758 0.224     0.208   0.666       1.434       0.906    1   10
 
 #---------- 2) SRF--------------------------------------------------
 
@@ -76,7 +76,7 @@ concordancefit(Surv(gbsg_data$time, gbsg_data$event),1-p10srf)$concordance #0.82
 #other stats
 round(method_any_validate(p10srf, final_time, gbsg_data, gbsg_data),3)
 #   T  AUCROC    BS BS_scaled C_score Calib_slope Calib_alpha
-#   5  0.916  0.145     0.444   0.824       2.855       0.125
+#   5  0.916  0.145     0.444   0.824       2.855       0.661
 
 #internal 3-fold CV
 srf_cv = method_any_cv(gbsg_data, params, method_srf_train, method_srf_predict, 
@@ -87,16 +87,16 @@ srf_cv = method_any_cv(gbsg_data, params, method_srf_train, method_srf_predict,
 #results by cv step
 srf_cv$test
 #   T    AUCROC        BS  BS_scaled   C_score Calib_slope Calib_alpha test cv_n
-# 1 5 0.7593788 0.2204363 0.20179222 0.7021088    1.469467  0.17154664    1    1
-# 2 5 0.7081672 0.2353548 0.08759203 0.7164307    1.323320  0.06334812    1    2
-# 3 5 0.7405126 0.2097591 0.16009892 0.7091582    1.409517  0.14364313    1    3
-# 4 5 0.6933945 0.2379000 0.12700981 0.6440329    1.232670  0.22363359    1    4
-# 5 5 0.7271822 0.1833009 0.23616684 0.7235089    1.627641  0.20036302    1    5
+# 1 5 0.7593788 0.2204363 0.20179222 0.7021088    1.469467  0.8412348    1    1
+# 2 5 0.7081672 0.2353548 0.08759203 0.7164307    1.323320  0.2847982    1    2
+# 3 5 0.7405126 0.2097591 0.16009892 0.7091582    1.409517  0.6843569    1    3
+# 4 5 0.6933945 0.2379000 0.12700981 0.6440329    1.232670  1.0690240    1    4
+# 5 5 0.7271822 0.1833009 0.23616684 0.7235089    1.627641  0.9654919    1    5
 
 #average CV results
 round(srf_cv$testaverage,3)
 #    T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-#5.000       0.726       0.217       0.163       0.699       1.413       0.161       1.000
+#5.000       0.726       0.217       0.163       0.699       1.413       0.769       1.000
 
 
 #---------- 3) Cox + fractional polynomials ----------------------------------------------
@@ -109,13 +109,13 @@ m_coxf$coefficients
 p10_coxf = method_coxmfp_predict(m_coxf,gbsg_data, final_time)
 round(method_any_validate(p10_coxf, final_time, gbsg_data, gbsg_data),3)
 #    T AUCROC    BS BS_scaled C_score Calib_slope Calib_alpha
-# 1  5  0.731 0.21     0.192   0.702       1.013       0.147
+# 1  5  0.731 0.21     0.192   0.702       1.013       0.765
 
 coxf_cv2 = method_any_cv(df = gbsg_data, params, method_coxmfp_train, method_coxmfp_predict, 
                          final_time , cv_number = 5, seed_for_cv = 42)
 round(coxf_cv2$testaverage,3)
 #     T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-# 5.000       0.714       0.226       0.123       0.687       0.893       0.156       1.000 
+# 5.000       0.714       0.226       0.123       0.687       0.893       0.811       1.000 
 
 #---------- 4) Ensemble 1 (COX -> SRF) ----------------------------------------------
 
@@ -123,17 +123,17 @@ m1a = method_1A_train(gbsg_data, params, final_time, inner_cv=3, seed_to_fix = 4
 p10_1a = method_1A_predict(model_1a = m1a,df_test = gbsg_data,fixed_time = final_time)
 round(method_any_validate(p10_1a, final_time, gbsg_data, gbsg_data),3)
 #     T   AUCROC     BS BS_scaled C_score  Calib_slope Calib_alpha
-# 1   5  0.859    0.171     0.343   0.779       2.078       0.138
+# 1   5  0.859    0.171     0.343   0.779       2.078       0.707
 ens1a_cv = method_any_cv(df = gbsg_data, params, method_1A_train, method_1A_predict, 
                          valuation_times = final_time , cv_number = 5, seed_for_cv = 42)
 round(ens1a_cv$testaverage,3)
 #       T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-#   5.000       0.726       0.222       0.138       0.696       1.452       0.129       1.000 
+#   5.000       0.726       0.222       0.138       0.696       1.452       0.641       1.000 
 
 #var importance from SRF
 round(m1a$vimp10,3)
 # pnodes cox_predict     progrec         age      estrec       horTh      tgrade    menostat  tsize
-#  0.038       0.034       0.023       0.017       0.008       0.002       0.001       0.000  -0.001
+#  0.037       0.035       0.021       0.016       0.006       0.002       0.001       0.000  0.000
 
 #---------- 4) Ensemble 2 (Tree -> Cox in leaves) ----------------------------------------------
 
@@ -162,7 +162,7 @@ ens2a_cv = method_any_cv(df = gbsg_data, params, method_2A_train, method_2A_pred
                          model_args = list("inner_cv"=3, verbose= FALSE))
 round(ens2a_cv$testaverage,3)
 #       T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-#   5.000       0.687       0.236       0.085       0.672       0.759       0.166       1.000 
+#   5.000       0.687       0.236       0.085       0.672       0.759       0.894       1.000 
 
 #---------- 4) Ensemble 2 (Tree -> Cox in leaves) ----------------------------------------------
 
@@ -182,7 +182,7 @@ ens3_cv = method_any_cv(gbsg_data, params, method_3_train, method_3_predict, cv_
                         model_args = list("inner_cv"=3, verbose=FALSE,"seed_to_fix" = 601))
 round(ens3_cv$testaverage,3)
 #      T      AUCROC          BS   BS_scaled     C_score Calib_slope Calib_alpha        test 
-#  5.000       0.719       0.222       0.136       0.680       1.015       0.156       1.000 
+#  5.000       0.719       0.222       0.136       0.680       1.015       0.809       1.000 
 
 #------------------------ Altogerther ----------------------------------------------
 final_results = round(
@@ -202,7 +202,7 @@ final_results
 # BS_scaled   0.1681  0.1225 0.1625 0.1376 0.0847 0.1364
 # C_score     0.6773  0.6871 0.6990 0.6959 0.6718 0.6797
 # Calib_slope 1.4641  0.8934 1.4125 1.4520 0.7587 1.0155
-# Calib_alpha 0.1578  0.1557 0.1605 0.1294 0.1656 0.1560
+# Calib_alpha 0.7732  0.8114 0.7690 0.6408 0.8943 0.8085
 # test        1.0000  1.0000 1.0000 1.0000 1.0000 1.0000
 
 #' =>  WHAT DOES IT TELL ABOUT THE DATA? 
