@@ -1,6 +1,6 @@
 ### Ensemble methods for survival analysis
 
-#### Feel free to upload and use the code, however use it responsibly in your project and critically appraise all the bits you are using. ####
+#### Feel free to upload and use the code. However, do it responsibly in your project and critically appraise all the bits you are using. ####
 
 #### Please don't forget to cite:
 Shamsutdinova, D., Stamate, D., Roberts, A., & Stahl, D. (2022). Combining Cox Model and Tree-Based Algorithms to Boost Performance and Preserve Interpretability for Health Outcomes. In IFIP International Conference on Artificial Intelligence Applications and Innovations (pp. 170-181). Springer, Cham.
